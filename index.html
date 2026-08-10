@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atelier Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">🌸</span>
+      <span class="brand-name">Atelier</span>
+    </div>
+    <nav class="nav">
+      <button class="nav-item is-active" data-view="overview">
+        <span class="nav-icon">✦</span> Übersicht
+      </button>
+      <button class="nav-item" data-view="invoices">
+        <span class="nav-icon">✎</span> Rechnungen
+      </button>
+      <button class="nav-item" data-view="contracts">
+        <span class="nav-icon">✎</span> Verträge
+      </button>
+      <button class="nav-item" data-view="finance">
+        <span class="nav-icon">◈</span> Einnahmen &amp; Ausgaben
+      </button>
+      <button class="nav-item" data-view="trends">
+        <span class="nav-icon">♪</span> TikTok-Trends
+      </button>
+      <button class="nav-item" data-view="clients">
+        <span class="nav-icon">♡</span> Kundinnen &amp; Kunden
+      </button>
+      <button class="nav-item" data-view="settings">
+        <span class="nav-icon">⚙</span> Firmendaten
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <p>Nur lokal gespeichert,<br>ganz privat für dich.</p>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <section class="view is-active" id="view-overview">
+      <header class="view-header">
+        <div>
+          <h1>Schön, dass du da bist</h1>
+          <p class="subtitle" id="todayLabel"></p>
+        </div>
+      </header>
+
+      <div class="grid grid-overview">
+
+        <div class="card card-weather" id="weatherCard">
+          <div class="card-head">
+            <h2>Wetter <span class="muted" id="weatherPlace"></span></h2>
+            <button class="btn-ghost small" id="changeLocationBtn">Ort ändern</button>
+          </div>
+          <div id="weatherBody" class="weather-body">
+            <p class="muted">Lade Wetterdaten …</p>
+          </div>
+          <div id="locationSearch" class="location-search hidden">
+            <input type="text" id="locationInput" placeholder="Stadt eingeben, z. B. Hamburg">
+            <button class="btn-primary small" id="locationSearchBtn">Suchen</button>
+            <div id="locationResults" class="location-results"></div>
+          </div>
+        </div>
+
+        <div class="card card-mail">
+          <div class="card-head">
+            <h2>Mails</h2>
+          </div>
+          <div class="mail-placeholder">
+            <p class="mail-icon">✉</p>
+            <p>Noch nicht verbunden.</p>
+            <p class="muted small">Wird gemeinsam einzeln eingerichtet.</p>
+          </div>
+        </div>
+
+        <div class="card card-stats">
+          <div class="card-head"><h2>Auf einen Blick</h2></div>
+          <div class="stats-row">
+            <div class="stat">
+              <span class="stat-value" id="statOpenInvoices">0</span>
+              <span class="stat-label">offene Rechnungen</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="statInvoiceSum">0 €</span>
+              <span class="stat-label">offener Betrag</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="statContracts">0</span>
+              <span class="stat-label">Verträge</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="statClients">0</span>
+              <span class="stat-label">Kund:innen</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-finance-preview">
+          <div class="card-head">
+            <h2>Einnahmen &amp; Ausgaben <span class="muted" id="overviewFinanceYear"></span></h2>
+            <button class="btn-ghost small" data-view="finance">Zur EÜR ↗</button>
+          </div>
+          <div class="stats-row three">
+            <div class="stat">
+              <span class="stat-value" id="ovFinIncome">0 €</span>
+              <span class="stat-label">Einnahmen</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="ovFinExpenses">0 €</span>
+              <span class="stat-label">Ausgaben</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="ovFinProfit">0 €</span>
+              <span class="stat-label">Gewinn</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-trends-preview">
+          <div class="card-head">
+            <h2>TikTok-Trend der Woche</h2>
+            <button class="btn-ghost small" data-view="trends">Alle Trends ↗</button>
+          </div>
+          <div id="overviewTrendPreview"></div>
+        </div>
+
+        <div class="card card-recent">
+          <div class="card-head"><h2>Zuletzt bearbeitet</h2></div>
+          <div id="recentList" class="recent-list"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FINANCE / EÜR -->
+    <section class="view" id="view-finance">
+      <header class="view-header">
+        <div>
+          <h1>Einnahmen &amp; Ausgaben</h1>
+          <p class="subtitle">Einnahmen-Überschuss-Rechnung (EÜR) für die Steuererfassung</p>
+        </div>
+        <div class="header-actions">
+          <select id="financeYearSelect" class="year-select"></select>
+          <button class="btn-ghost" id="newIncomeBtn">+ Einnahme</button>
+          <button class="btn-primary" id="newExpenseBtn">+ Ausgabe</button>
+        </div>
+      </header>
+
+      <div class="stats-row three finance-summary">
+        <div class="stat">
+          <span class="stat-value" id="finTotalIncome">0 €</span>
+          <span class="stat-label">Einnahmen gesamt</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="finTotalExpenses">0 €</span>
+          <span class="stat-label">Ausgaben gesamt</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="finProfit">0 €</span>
+          <span class="stat-label">Gewinn / Verlust</span>
+        </div>
+      </div>
+
+      <div class="finance-grid">
+        <div class="card table-card">
+          <div class="card-head"><h2>Einnahmen</h2></div>
+          <table class="data-table" id="incomeTable">
+            <thead><tr><th>Datum</th><th>Bezeichnung</th><th>Quelle</th><th class="num">Betrag</th><th></th></tr></thead>
+            <tbody id="incomeTableBody"></tbody>
+          </table>
+          <p class="empty-state hidden" id="incomeEmptyState">Noch keine Einnahmen in diesem Jahr.</p>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-head"><h2>Ausgaben</h2></div>
+          <table class="data-table" id="expenseTable">
+            <thead><tr><th>Datum</th><th>Kategorie</th><th>Beschreibung</th><th class="num">Betrag</th><th></th></tr></thead>
+            <tbody id="expenseTableBody"></tbody>
+          </table>
+          <p class="empty-state hidden" id="expenseEmptyState">Noch keine Ausgaben in diesem Jahr.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Ausgaben nach Kategorie</h2></div>
+        <div id="expenseBreakdown" class="expense-breakdown"></div>
+      </div>
+    </section>
+
+    <!-- TRENDS -->
+    <section class="view" id="view-trends">
+      <header class="view-header">
+        <div>
+          <h1>TikTok-Trends</h1>
+          <p class="subtitle" id="trendsUpdatedLabel">Kuratierte Liste</p>
+        </div>
+        <button class="btn-primary" id="newTrendNoteBtn">+ Trend-Notiz</button>
+      </header>
+
+      <p class="hint-banner hidden" id="trendsStaleHint">Diese kuratierte Liste ist älter als 9 Tage – schau gerne im TikTok Creative Center vorbei oder trag neue Funde im Trend-Journal ein.</p>
+
+      <div class="trend-links" id="trendQuickLinks"></div>
+
+      <h2 class="section-title">Aktuell kuratiert</h2>
+      <div class="trend-cards-grid" id="curatedTrendsList"></div>
+
+      <h2 class="section-title">Euer Trend-Journal</h2>
+      <div class="trend-cards-grid" id="trendNotesList"></div>
+      <p class="empty-state hidden" id="trendNotesEmptyState">Noch keine eigenen Notizen – trag Trends ein, die dir auffallen.</p>
+    </section>
+
+    <!-- INVOICES LIST -->
+    <section class="view" id="view-invoices">
+      <header class="view-header">
+        <div>
+          <h1>Rechnungen</h1>
+          <p class="subtitle">Alle Rechnungen an deine Kund:innen</p>
+        </div>
+        <button class="btn-primary" id="newInvoiceBtn">+ Neue Rechnung</button>
+      </header>
+      <div class="card table-card">
+        <table class="data-table" id="invoiceTable">
+          <thead>
+            <tr>
+              <th>Nr.</th><th>Datum</th><th>Kundin/Kunde</th><th>Betrag</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="invoiceTableBody"></tbody>
+        </table>
+        <p class="empty-state hidden" id="invoiceEmptyState">Noch keine Rechnungen vorhanden.</p>
+      </div>
+    </section>
+
+    <!-- INVOICE EDITOR -->
+    <section class="view" id="view-invoice-editor">
+      <header class="view-header no-print">
+        <div>
+          <h1 id="invoiceEditorTitle">Neue Rechnung</h1>
+          <p class="subtitle">Positionen ergänzen, alles ist frei anpassbar</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-ghost" id="invoiceCancelBtn">Abbrechen</button>
+          <button class="btn-ghost" id="invoicePrintBtn">🖨 Drucken / PDF</button>
+          <button class="btn-primary" id="invoiceSaveBtn">Speichern</button>
+        </div>
+      </header>
+
+      <div class="editor-layout">
+        <div class="editor-form no-print" id="invoiceForm"></div>
+        <div class="editor-preview">
+          <div class="doc-preview" id="invoicePreview"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTRACTS LIST -->
+    <section class="view" id="view-contracts">
+      <header class="view-header">
+        <div>
+          <h1>Verträge</h1>
+          <p class="subtitle">UGC-Verträge auf Basis deiner Grundvorlage</p>
+        </div>
+        <button class="btn-primary" id="newContractBtn">+ Neuer Vertrag</button>
+      </header>
+      <div class="card table-card">
+        <table class="data-table" id="contractTable">
+          <thead>
+            <tr>
+              <th>Titel</th><th>Datum</th><th>Kundin/Kunde</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="contractTableBody"></tbody>
+        </table>
+        <p class="empty-state hidden" id="contractEmptyState">Noch keine Verträge vorhanden.</p>
+      </div>
+    </section>
+
+    <!-- CONTRACT EDITOR -->
+    <section class="view" id="view-contract-editor">
+      <header class="view-header no-print">
+        <div>
+          <h1 id="contractEditorTitle">Neuer Vertrag</h1>
+          <p class="subtitle">Alle Abschnitte sind frei editierbar</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-ghost" id="contractCancelBtn">Abbrechen</button>
+          <button class="btn-ghost" id="contractPrintBtn">🖨 Drucken / PDF</button>
+          <button class="btn-primary" id="contractSaveBtn">Speichern</button>
+        </div>
+      </header>
+
+      <div class="editor-layout">
+        <div class="editor-form no-print" id="contractForm"></div>
+        <div class="editor-preview">
+          <div class="doc-preview" id="contractPreview"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTS -->
+    <section class="view" id="view-clients">
+      <header class="view-header">
+        <div>
+          <h1>Kundinnen &amp; Kunden</h1>
+          <p class="subtitle">Für schnelles Ausfüllen von Rechnungen &amp; Verträgen</p>
+        </div>
+        <button class="btn-primary" id="newClientBtn">+ Neue Kundin/Kunde</button>
+      </header>
+      <div class="card table-card">
+        <table class="data-table" id="clientTable">
+          <thead>
+            <tr><th>Name</th><th>Firma</th><th>Ort</th><th>E-Mail</th><th></th></tr>
+          </thead>
+          <tbody id="clientTableBody"></tbody>
+        </table>
+        <p class="empty-state hidden" id="clientEmptyState">Noch keine Kund:innen erfasst.</p>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <header class="view-header">
+        <div>
+          <h1>Firmendaten</h1>
+          <p class="subtitle">Diese Grundangaben füllen Rechnungen &amp; Verträge automatisch</p>
+        </div>
+        <button class="btn-primary" id="settingsSaveBtn">Speichern</button>
+      </header>
+      <div class="card settings-card" id="settingsForm"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal for client quick-add -->
+<div class="modal-backdrop hidden" id="modalBackdrop">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
