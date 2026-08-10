@@ -13,6 +13,29 @@ const DEFAULT_SECTIONS = {
   finalProvisions: 'Änderungen und Ergänzungen dieses Vertrages bedürfen der Textform. Sollte eine Bestimmung dieses Vertrages unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt. Es gilt das Recht der Bundesrepublik Deutschland.'
 };
 
+export function daysUntil(dateStr) {
+  const today = new Date(todayISO() + 'T00:00:00');
+  const target = new Date(dateStr + 'T00:00:00');
+  return Math.round((target - today) / 86400000);
+}
+
+export function rightsInfo(c) {
+  if (c.usageRightsUnlimited !== false || !c.usageRightsEndDate) return null;
+  const days = daysUntil(c.usageRightsEndDate);
+  const status = days < 0 ? (c.followUpDone ? 'done' : 'expired') : days <= 30 ? 'soon' : 'ok';
+  return { endDate: c.usageRightsEndDate, days, status, scope: c.usageRightsScope, followUpDone: !!c.followUpDone };
+}
+
+function rightsBadge(c) {
+  if (c.usageRightsUnlimited !== false) return { label: 'Unbegrenzt', cls: 'status-draft' };
+  if (!c.usageRightsEndDate) return { label: '—', cls: 'status-draft' };
+  const info = rightsInfo(c);
+  if (info.status === 'expired') return { label: `Abgelaufen (${fmtDate(info.endDate)})`, cls: 'status-danger' };
+  if (info.status === 'done') return { label: `Abgelaufen · Follow-up erledigt`, cls: 'status-draft' };
+  if (info.status === 'soon') return { label: `bis ${fmtDate(info.endDate)} · noch ${info.days} Tage`, cls: 'status-open' };
+  return { label: `bis ${fmtDate(info.endDate)}`, cls: 'status-paid' };
+}
+
 export function initContracts(navigate) {
   goHome = navigate;
   document.getElementById('newContractBtn').addEventListener('click', () => openEditor());
@@ -32,11 +55,13 @@ export function renderContractList() {
   contracts.forEach(c => {
     const statusClass = c.status === 'signed' ? 'status-paid' : c.status === 'draft' ? 'status-draft' : 'status-open';
     const statusLabel = c.status === 'signed' ? 'Unterschrieben' : c.status === 'draft' ? 'Entwurf' : 'Versendet';
+    const badge = rightsBadge(c);
     const tr = el('tr', {}, [
       el('td', {}, c.title || 'UGC-Vertrag'),
       el('td', {}, fmtDate(c.date)),
       el('td', {}, c.clientName || '—'),
       el('td', {}, el('span', { class: `status-pill ${statusClass}` }, statusLabel)),
+      el('td', {}, el('span', { class: `status-pill ${badge.cls}` }, badge.label)),
       el('td', {}, el('div', { class: 'row-actions' }, [
         el('button', { class: 'icon-btn', title: 'Bearbeiten', onclick: () => openEditor(c) }, '✎'),
         el('button', { class: 'icon-btn', title: 'Duplizieren', onclick: () => duplicateContract(c) }, '⧉'),
@@ -44,6 +69,60 @@ export function renderContractList() {
       ]))
     ]);
     tbody.appendChild(tr);
+  });
+
+  renderRightsOverview();
+}
+
+function renderRightsOverview() {
+  const box = document.getElementById('rightsOverviewCard');
+  const list = document.getElementById('rightsOverviewList');
+  if (!box) return;
+
+  const tracked = Store.getContracts()
+    .map(c => ({ c, info: rightsInfo(c) }))
+    .filter(x => x.info && x.info.status !== 'done')
+    .sort((a, b) => a.info.days - b.info.days);
+
+  box.classList.toggle('hidden', tracked.length === 0);
+  list.innerHTML = '';
+
+  tracked.forEach(({ c, info }) => {
+    const row = document.createElement('div');
+    row.className = 'rights-row';
+    const statusText = info.status === 'expired'
+      ? `abgelaufen seit ${Math.abs(info.days)} Tagen`
+      : info.status === 'soon'
+        ? `läuft in ${info.days} Tagen ab`
+        : `läuft in ${info.days} Tagen ab`;
+    const pillClass = info.status === 'expired' ? 'status-danger' : info.status === 'soon' ? 'status-open' : 'status-paid';
+    row.innerHTML = `
+      <div class="rights-row-main">
+        <strong>${escapeHtml(c.title || 'UGC-Vertrag')}</strong>
+        <span class="muted small"> · ${escapeHtml(c.clientName || 'ohne Kund:in')}${info.scope ? ' · ' + escapeHtml(info.scope) : ''}</span>
+      </div>
+      <span class="status-pill ${pillClass}">${fmtDate(info.endDate)} · ${statusText}</span>
+    `;
+    const actions = document.createElement('div');
+    actions.className = 'rights-row-actions';
+    const openBtn = document.createElement('button');
+    openBtn.className = 'btn-ghost small';
+    openBtn.textContent = 'Öffnen';
+    openBtn.addEventListener('click', () => openEditor(c));
+    actions.appendChild(openBtn);
+    if (info.status === 'expired') {
+      const doneBtn = document.createElement('button');
+      doneBtn.className = 'btn-ghost small';
+      doneBtn.textContent = 'Follow-up erledigt';
+      doneBtn.addEventListener('click', () => {
+        Store.saveContract({ ...c, followUpDone: true });
+        renderContractList();
+        showToast('Als erledigt markiert');
+      });
+      actions.appendChild(doneBtn);
+    }
+    row.appendChild(actions);
+    list.appendChild(row);
   });
 }
 
@@ -55,7 +134,7 @@ function removeContract(c) {
 }
 
 function duplicateContract(c) {
-  const copy = { ...c, id: uid(), date: todayISO(), status: 'draft' };
+  const copy = { ...c, id: uid(), date: todayISO(), status: 'draft', followUpDone: false };
   Store.saveContract(copy);
   renderContractList();
   openEditor(copy);
@@ -77,6 +156,10 @@ function openEditor(contract = null) {
       feeAmount: '',
       paymentTerms: 'Die Vergütung ist innerhalb von 14 Tagen nach Rechnungsstellung fällig.',
       status: 'draft',
+      usageRightsUnlimited: true,
+      usageRightsEndDate: '',
+      usageRightsScope: '',
+      followUpDone: false,
       ...DEFAULT_SECTIONS
     };
   }
@@ -147,6 +230,29 @@ function renderForm() {
     <div class="form-section">
       <h3>§3 Nutzungsrechte</h3>
       <div class="form-row"><div class="form-field full"><textarea id="ct-usageRights">${current.usageRights}</textarea></div></div>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="ct-usageRightsUnlimited">Gültigkeit</label>
+          <select id="ct-usageRightsUnlimited">
+            <option value="true" ${current.usageRightsUnlimited !== false ? 'selected' : ''}>Zeitlich unbegrenzt</option>
+            <option value="false" ${current.usageRightsUnlimited === false ? 'selected' : ''}>Befristet bis</option>
+          </select>
+        </div>
+        <div class="form-field ${current.usageRightsUnlimited !== false ? 'hidden' : ''}" id="ct-usageRightsEndDateWrap">
+          <label for="ct-usageRightsEndDate">Gültig bis</label>
+          <input type="date" id="ct-usageRightsEndDate" value="${current.usageRightsEndDate || ''}">
+        </div>
+      </div>
+      <div class="form-row ${current.usageRightsUnlimited !== false ? 'hidden' : ''}" id="ct-usageRightsScopeWrap">
+        <div class="form-field full">
+          <label for="ct-usageRightsScope">Umfang der Befristung (optional)</label>
+          <input id="ct-usageRightsScope" placeholder="z. B. nur Paid Ads / Whitelisting" value="${current.usageRightsScope || ''}">
+        </div>
+      </div>
+      <div class="form-row ${current.usageRightsUnlimited !== false ? 'hidden' : ''}" id="ct-followUpWrap">
+        <label class="checkbox-field"><input type="checkbox" id="ct-followUpDone" ${current.followUpDone ? 'checked' : ''}> Follow-up nach Ablauf bereits erledigt</label>
+      </div>
+      <p class="field-hint">Bei Befristung erscheint der Vertrag automatisch in "Fristen im Blick", solange kein Follow-up erledigt ist.</p>
     </div>
 
     <div class="form-section">
@@ -186,6 +292,23 @@ function renderForm() {
   ['title', 'date', 'status', 'clientName', 'clientAddress', 'feeAmount', 'startDate', 'deliveryDate',
    'paymentTerms', 'scope', 'usageRights', 'confidentiality', 'termination', 'finalProvisions']
     .forEach(key => bind(`ct-${key}`, key));
+
+  document.getElementById('ct-usageRightsUnlimited').addEventListener('change', (e) => {
+    current.usageRightsUnlimited = e.target.value === 'true';
+    renderForm();
+    renderPreview();
+  });
+  document.getElementById('ct-usageRightsEndDate').addEventListener('input', (e) => {
+    current.usageRightsEndDate = e.target.value;
+    renderPreview();
+  });
+  document.getElementById('ct-usageRightsScope').addEventListener('input', (e) => {
+    current.usageRightsScope = e.target.value;
+    renderPreview();
+  });
+  document.getElementById('ct-followUpDone').addEventListener('change', (e) => {
+    current.followUpDone = e.target.checked;
+  });
 }
 
 function renderPreview() {
@@ -233,6 +356,9 @@ function renderPreview() {
     <div class="contract-section">
       <h3>§3 Nutzungsrechte</h3>
       <p class="body-text">${escapeHtml(current.usageRights)}</p>
+      <p class="body-text">${current.usageRightsUnlimited !== false
+        ? 'Die eingeräumten Nutzungsrechte gelten zeitlich unbegrenzt.'
+        : `Die eingeräumten Nutzungsrechte sind befristet${current.usageRightsScope ? ' auf ' + escapeHtml(current.usageRightsScope) : ''} und gültig bis <strong>${fmtDate(current.usageRightsEndDate) || '—'}</strong>.`}</p>
     </div>
 
     <div class="contract-section">

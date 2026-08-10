@@ -138,6 +138,14 @@
           <div id="overviewTrendPreview"></div>
         </div>
 
+        <div class="card card-rights-preview">
+          <div class="card-head">
+            <h2>Nutzungsrechte-Fristen</h2>
+            <button class="btn-ghost small" data-view="contracts">Zu den Verträgen ↗</button>
+          </div>
+          <div id="overviewRightsPreview"></div>
+        </div>
+
         <div class="card card-recent">
           <div class="card-head"><h2>Zuletzt bearbeitet</h2></div>
           <div id="recentList" class="recent-list"></div>
@@ -276,11 +284,18 @@
         </div>
         <button class="btn-primary" id="newContractBtn">+ Neuer Vertrag</button>
       </header>
+
+      <div class="card rights-overview-card hidden" id="rightsOverviewCard">
+        <div class="card-head"><h2>Fristen im Blick</h2></div>
+        <p class="field-hint" style="margin-bottom:12px;">Befristete Nutzungsrechte (z. B. Paid-Ads-Whitelisting), die bald ablaufen oder bereits abgelaufen sind – gute Gelegenheit für ein Follow-up.</p>
+        <div id="rightsOverviewList" class="rights-overview-list"></div>
+      </div>
+
       <div class="card table-card">
         <table class="data-table" id="contractTable">
           <thead>
             <tr>
-              <th>Titel</th><th>Datum</th><th>Kundin/Kunde</th><th>Status</th><th></th>
+              <th>Titel</th><th>Datum</th><th>Kundin/Kunde</th><th>Status</th><th>Nutzungsrechte</th><th></th>
             </tr>
           </thead>
           <tbody id="contractTableBody"></tbody>

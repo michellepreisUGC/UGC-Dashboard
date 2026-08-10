@@ -132,7 +132,6 @@ input, textarea, select{ font-family: inherit; }
   grid-template-columns: 1.3fr 1fr;
   gap: 20px;
 }
-.card-weather{ grid-row: span 2; }
 .card-recent{ grid-column: span 2; }
 
 @media (max-width: 900px){
@@ -208,6 +207,7 @@ input, textarea, select{ font-family: inherit; }
 .status-open{ background: var(--rose-tint); color: var(--rose-dark); }
 .status-paid{ background: var(--sage-tint); color:#5D7048; }
 .status-draft{ background:#F1EEEC; color: var(--ink-soft); }
+.status-danger{ background:#FBE4E1; color:#B4534F; }
 .empty-state{ text-align:center; color: var(--ink-faint); padding: 34px 10px; }
 
 /* ---------- Forms ---------- */
@@ -314,6 +314,19 @@ input, textarea, select{ font-family: inherit; }
 .breakdown-bar{ height:100%; background: linear-gradient(90deg, var(--rose), var(--gold)); border-radius:999px; }
 .breakdown-value{ text-align:right; font-weight:600; }
 .data-table th.num, .data-table td.num{ text-align:right; }
+
+/* ---------- Rights overview ---------- */
+.rights-overview-card{ margin-bottom: 20px; }
+.rights-overview-list{ display:flex; flex-direction:column; gap:10px; }
+.rights-row{
+  display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;
+  background: var(--surface-alt); border-radius: var(--radius-md); padding: 12px 16px;
+}
+.rights-row-main{ font-size:.9rem; }
+.rights-row-actions{ display:flex; gap:8px; }
+#overviewRightsPreview .rights-row{ background: transparent; padding: 8px 0; border-bottom: 1px solid var(--border); border-radius: 0; }
+#overviewRightsPreview .rights-row:last-child{ border-bottom: none; }
+#overviewRightsPreview .rights-row-actions{ display:none; }
 
 /* ---------- Trends ---------- */
 .section-title{ font-size:1.2rem; margin: 28px 0 14px; }

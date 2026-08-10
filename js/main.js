@@ -4,7 +4,7 @@ import { initWeather } from './weather.js';
 import { renderSettings } from './settings.js';
 import { renderClientsView } from './clients.js';
 import { initInvoices, renderInvoiceList, calcTotals } from './invoices.js';
-import { initContracts, renderContractList } from './contracts.js';
+import { initContracts, renderContractList, rightsInfo } from './contracts.js';
 import { initFinance, renderFinanceView } from './finance.js';
 import { initTrends, renderTrendsView } from './trends.js';
 import { CURATED_TRENDS } from './trends-data.js';
@@ -80,6 +80,30 @@ function renderOverview() {
       </div>`;
   } else {
     trendPreview.innerHTML = '<p class="muted small">Noch keine Trends erfasst.</p>';
+  }
+
+  const trackedRights = contracts
+    .map(c => ({ c, info: rightsInfo(c) }))
+    .filter(x => x.info && x.info.status !== 'done')
+    .sort((a, b) => a.info.days - b.info.days)
+    .slice(0, 3);
+
+  const rightsPreview = document.getElementById('overviewRightsPreview');
+  if (!trackedRights.length) {
+    rightsPreview.innerHTML = '<p class="muted small">Aktuell keine befristeten Nutzungsrechte hinterlegt.</p>';
+  } else {
+    rightsPreview.innerHTML = trackedRights.map(({ c, info }) => {
+      const pillClass = info.status === 'expired' ? 'status-danger' : info.status === 'soon' ? 'status-open' : 'status-paid';
+      const statusText = info.status === 'expired' ? `abgelaufen seit ${Math.abs(info.days)} Tagen` : `läuft in ${info.days} Tagen ab`;
+      return `
+        <div class="rights-row">
+          <div class="rights-row-main">
+            <strong>${c.title || 'UGC-Vertrag'}</strong>
+            <span class="muted small"> · ${c.clientName || 'ohne Kund:in'}</span>
+          </div>
+          <span class="status-pill ${pillClass}">${fmtDate(info.endDate)} · ${statusText}</span>
+        </div>`;
+    }).join('');
   }
 
   const recent = [
