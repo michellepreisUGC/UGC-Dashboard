@@ -163,6 +163,7 @@
         </div>
         <div class="header-actions">
           <select id="financeYearSelect" class="year-select"></select>
+          <button class="btn-ghost" id="financeExportBtn">Jahresexport (PDF)</button>
           <button class="btn-ghost" id="newIncomeBtn">+ Einnahme</button>
           <button class="btn-primary" id="newExpenseBtn">+ Ausgabe</button>
         </div>
@@ -206,6 +207,23 @@
       <div class="card">
         <div class="card-head"><h2>Ausgaben nach Kategorie</h2></div>
         <div id="expenseBreakdown" class="expense-breakdown"></div>
+      </div>
+    </section>
+
+    <!-- FINANCE EXPORT -->
+    <section class="view" id="view-finance-export">
+      <header class="view-header no-print">
+        <div>
+          <h1>Jahresexport</h1>
+          <p class="subtitle">Für die Steuererklärung – als PDF sichern und an die Steuerberatung weitergeben</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-ghost" id="financeExportBackBtn">Zurück</button>
+          <button class="btn-primary" id="financeExportPrintBtn">🖨 Drucken / PDF</button>
+        </div>
+      </header>
+      <div class="editor-preview" style="max-width:800px; margin:0 auto;">
+        <div class="doc-preview" id="financeExportPreview"></div>
       </div>
     </section>
 

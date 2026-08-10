@@ -53,3 +53,43 @@ export function openModal(contentNode) {
 export function closeModal() {
   document.getElementById('modalBackdrop').classList.add('hidden');
 }
+
+export function slugify(str) {
+  return (str || '')
+    .toString()
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/ä/gi, 'ae').replace(/ö/gi, 'oe').replace(/ü/gi, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    || 'dokument';
+}
+
+export function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024; // 8 MB Rohdateigröße
+export function checkAttachmentSize(file) {
+  if (file.size > MAX_ATTACHMENT_BYTES) {
+    showToast('Datei ist größer als 8 MB – bitte vorher komprimieren.');
+    return false;
+  }
+  return true;
+}
+
+export function printAsPdf(filename) {
+  const original = document.title;
+  document.title = filename;
+  const restore = () => {
+    document.title = original;
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+  window.print();
+  setTimeout(restore, 3000);
+}

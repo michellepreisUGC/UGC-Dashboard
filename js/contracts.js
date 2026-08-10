@@ -1,5 +1,5 @@
 import { Store } from './store.js';
-import { uid, eur, fmtDate, todayISO, el, showToast } from './util.js';
+import { uid, eur, fmtDate, todayISO, el, showToast, slugify, fileToDataUrl, checkAttachmentSize, printAsPdf } from './util.js';
 import { openClientModal } from './clients.js';
 
 let current = null;
@@ -41,7 +41,10 @@ export function initContracts(navigate) {
   document.getElementById('newContractBtn').addEventListener('click', () => openEditor());
   document.getElementById('contractCancelBtn').addEventListener('click', () => navigate('contracts'));
   document.getElementById('contractSaveBtn').addEventListener('click', saveCurrent);
-  document.getElementById('contractPrintBtn').addEventListener('click', () => window.print());
+  document.getElementById('contractPrintBtn').addEventListener('click', () => {
+    const filename = `Vertrag_${slugify(current.title)}_${slugify(current.clientName)}_${current.date}`;
+    printAsPdf(filename);
+  });
   document.addEventListener('client-saved', () => { if (current) renderForm(); });
 }
 
@@ -57,7 +60,7 @@ export function renderContractList() {
     const statusLabel = c.status === 'signed' ? 'Unterschrieben' : c.status === 'draft' ? 'Entwurf' : 'Versendet';
     const badge = rightsBadge(c);
     const tr = el('tr', {}, [
-      el('td', {}, c.title || 'UGC-Vertrag'),
+      el('td', {}, `${c.title || 'UGC-Vertrag'}${c.attachmentName ? ' 📎' : ''}`),
       el('td', {}, fmtDate(c.date)),
       el('td', {}, c.clientName || '—'),
       el('td', {}, el('span', { class: `status-pill ${statusClass}` }, statusLabel)),
@@ -134,7 +137,7 @@ function removeContract(c) {
 }
 
 function duplicateContract(c) {
-  const copy = { ...c, id: uid(), date: todayISO(), status: 'draft', followUpDone: false };
+  const copy = { ...c, id: uid(), date: todayISO(), status: 'draft', followUpDone: false, attachmentName: '', attachmentData: '' };
   Store.saveContract(copy);
   renderContractList();
   openEditor(copy);
@@ -160,6 +163,8 @@ function openEditor(contract = null) {
       usageRightsEndDate: '',
       usageRightsScope: '',
       followUpDone: false,
+      attachmentName: '',
+      attachmentData: '',
       ...DEFAULT_SECTIONS
     };
   }
@@ -269,6 +274,26 @@ function renderForm() {
       <h3>§6 Schlussbestimmungen</h3>
       <div class="form-row"><div class="form-field full"><textarea id="ct-finalProvisions">${current.finalProvisions}</textarea></div></div>
     </div>
+
+    <div class="form-section">
+      <h3>PDF-Anhang</h3>
+      <p class="field-hint" style="margin-bottom:10px;">Für bereits abgeschlossene Verträge: unterschriebenes Original-PDF hier ablegen, dann die Eckdaten oben kurz eintragen.</p>
+      ${current.attachmentName ? `
+        <div class="attachment-row">
+          <span>📎 ${escapeHtml(current.attachmentName)}</span>
+          <div class="row-actions">
+            <button class="btn-ghost small" type="button" id="ct-attachmentOpen">Öffnen</button>
+            <button class="btn-ghost small" type="button" id="ct-attachmentRemove">Entfernen</button>
+          </div>
+        </div>
+      ` : `
+        <div class="form-row">
+          <div class="form-field full">
+            <input type="file" id="ct-attachmentInput" accept="application/pdf">
+          </div>
+        </div>
+      `}
+    </div>
   `;
 
   document.getElementById('ct-newClientBtn').addEventListener('click', () => openClientModal());
@@ -309,6 +334,35 @@ function renderForm() {
   document.getElementById('ct-followUpDone').addEventListener('change', (e) => {
     current.followUpDone = e.target.checked;
   });
+
+  const attachmentInput = document.getElementById('ct-attachmentInput');
+  if (attachmentInput) {
+    attachmentInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!checkAttachmentSize(file)) { attachmentInput.value = ''; return; }
+      current.attachmentName = file.name;
+      current.attachmentData = await fileToDataUrl(file);
+      renderForm();
+      showToast('PDF angehängt');
+    });
+  }
+  const attachmentOpen = document.getElementById('ct-attachmentOpen');
+  if (attachmentOpen) {
+    attachmentOpen.addEventListener('click', () => {
+      const win = window.open();
+      win.document.write(`<iframe src="${current.attachmentData}" style="border:0;width:100%;height:100vh;"></iframe>`);
+    });
+  }
+  const attachmentRemove = document.getElementById('ct-attachmentRemove');
+  if (attachmentRemove) {
+    attachmentRemove.addEventListener('click', () => {
+      current.attachmentName = '';
+      current.attachmentData = '';
+      renderForm();
+      showToast('Anhang entfernt');
+    });
+  }
 }
 
 function renderPreview() {

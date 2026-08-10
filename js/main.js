@@ -9,7 +9,7 @@ import { initFinance, renderFinanceView } from './finance.js';
 import { initTrends, renderTrendsView } from './trends.js';
 import { CURATED_TRENDS } from './trends-data.js';
 
-const NAV_HIGHLIGHT = { 'invoice-editor': 'invoices', 'contract-editor': 'contracts' };
+const NAV_HIGHLIGHT = { 'invoice-editor': 'invoices', 'contract-editor': 'contracts', 'finance-export': 'finance' };
 
 function navigate(view) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('is-active'));

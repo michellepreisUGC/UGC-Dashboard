@@ -7,9 +7,9 @@ Reines HTML/CSS/JavaScript, kein Build-Tool, keine Abhängigkeiten.
 
 - **Wetter**: 3-Tage-Vorschau für den aktuellen Standort (per Geolocation) oder frei wählbaren Ort, über die kostenlose [Open-Meteo](https://open-meteo.com) API (kein API-Key nötig).
 - **Mails**: Platzhalter-Karte – die eigentliche Verbindung wird später gemeinsam eingerichtet.
-- **Rechnungen**: Editor mit freien Positionen, automatischer Summenberechnung, deutschen Pflichtangaben nach §14 UStG (Rechnungsnummer, Leistungsdatum, Steuernummer/USt-IdNr., Kleinunternehmerregelung §19 UStG) sowie Druck/PDF-Export über den Browser-Druckdialog.
-- **Verträge**: UGC-Vertrags-Grundvorlage mit editierbaren Abschnitten (Leistung, Vergütung, Nutzungsrechte, Vertraulichkeit, Kündigung, Schlussbestimmungen), ebenfalls druckbar. Nutzungsrechte können zeitlich befristet werden (z. B. Paid-Ads-Whitelisting) – die Karte "Fristen im Blick" zeigt ablaufende/abgelaufene Rechte zur Follow-up-Nachverfolgung, inkl. Vorschau auf der Startseite.
-- **Einnahmen & Ausgaben**: Einnahmen-Überschuss-Rechnung (EÜR) für die Steuererfassung. Bezahlte Rechnungen zählen automatisch als Einnahme, dazu manuelle Einnahmen/Ausgaben mit Kategorien, Jahresauswahl, Gewinn/Verlust und Ausgaben-Aufschlüsselung nach Kategorie. Eine Kurzübersicht erscheint auch auf der Startseite.
+- **Rechnungen**: Editor mit freien Positionen, automatischer Summenberechnung, deutschen Pflichtangaben nach §14 UStG (Rechnungsnummer, Leistungsdatum, Steuernummer/USt-IdNr., Kleinunternehmerregelung §19 UStG), optionalem PDF-Anhang für bereits abgeschlossene Rechnungen sowie Druck/PDF-Export mit automatisch vorgeschlagenem Dateinamen.
+- **Verträge**: UGC-Vertrags-Grundvorlage mit editierbaren Abschnitten (Leistung, Vergütung, Nutzungsrechte, Vertraulichkeit, Kündigung, Schlussbestimmungen), ebenfalls druckbar mit automatischem Dateinamen. Nutzungsrechte können zeitlich befristet werden (z. B. Paid-Ads-Whitelisting) – die Karte "Fristen im Blick" zeigt ablaufende/abgelaufene Rechte zur Follow-up-Nachverfolgung, inkl. Vorschau auf der Startseite. Auch hier lässt sich ein PDF-Anhang für bereits laufende/abgeschlossene Verträge hinterlegen.
+- **Einnahmen & Ausgaben**: Einnahmen-Überschuss-Rechnung (EÜR) für die Steuererfassung. Bezahlte Rechnungen zählen automatisch als Einnahme, dazu manuelle Einnahmen/Ausgaben mit Kategorien, Jahresauswahl, Gewinn/Verlust und Ausgaben-Aufschlüsselung nach Kategorie. Eine Kurzübersicht erscheint auch auf der Startseite. Über "Jahresexport (PDF)" lässt sich die komplette Jahresübersicht (alle Einnahmen, alle Ausgaben nach Kategorie, Summen) als ein druckbares Dokument für die Steuererklärung erzeugen.
 - **TikTok-Trends**: Kuratierte Liste aktueller Trends (Sounds, Challenges, Formate, Hashtags, UGC-Tipps) mit Quellenangabe, Schnelllinks zum offiziellen TikTok Creative Center sowie ein eigenes Trend-Journal zum Festhalten selbst entdeckter Ideen. Die kuratierte Liste wird wöchentlich automatisch aktualisiert (siehe unten).
 - **Kund:innen**: Einfache Kontaktverwaltung zur Wiederverwendung in Rechnungen & Verträgen.
 - **Firmendaten**: Zentrale Grundvorlage (Firmenname, Sitz, Steuernummer, Bankverbindung, Logo, Standardtexte), die automatisch in alle Dokumente einfließt.
@@ -38,11 +38,20 @@ npx serve .
 
 ## Daten & Speicherung
 
-Alle Eingaben (Firmendaten, Kund:innen, Rechnungen, Verträge, gewählter Wetter-Ort) werden **ausschließlich lokal im Browser** gespeichert (`localStorage`). Es gibt keinen Server, keine Datenbank, keine Cloud-Synchronisation:
+Alle Eingaben (Firmendaten, Kund:innen, Rechnungen, Verträge, hochgeladene PDF-Anhänge, gewählter Wetter-Ort) werden **ausschließlich lokal im Browser** gespeichert (`localStorage`). Es gibt keinen Server, keine Datenbank, keine Cloud-Synchronisation:
 
 - Die Daten sind an das jeweilige Gerät und den jeweiligen Browser gebunden.
-- Beim Löschen der Browserdaten gehen auch die App-Daten verloren.
+- Beim Löschen der Browserdaten gehen auch die App-Daten (inkl. Anhänge) verloren.
+- `localStorage` hat ein Limit von üblicherweise 5–10 MB pro Domain. PDF-Anhänge über 8 MB werden abgelehnt (Warnhinweis erscheint); bei vielen/großen Anhängen kann der Speicher trotzdem knapp werden – im Zweifel den Anhang vor dem Hochladen komprimieren.
 - Für den Zugriff von mehreren Geräten aus (z. B. Laptop und Handy) müsste künftig eine echte Backend-Anbindung ergänzt werden – das ist bewusst nicht Teil dieser ersten Version.
+
+### PDF-Anhänge für bestehende Rechnungen/Verträge
+
+Rechnungen und Verträge, die bereits abgeschlossen sind oder außerhalb des Dashboards laufen, lassen sich trotzdem erfassen: Eintrag anlegen, Eckdaten (Kundin/Kunde, Betrag bzw. Vergütung, Datum, ggf. Nutzungsrechte-Frist) kurz eintragen, das Original-PDF im Abschnitt „PDF-Anhang" hochladen. So bleiben alle Fristen, Beträge und Follow-ups an einer Stelle sichtbar, ohne dass Inhalte manuell abgetippt werden müssen. Ein automatisches Auslesen der PDF-Inhalte in die Formularfelder gibt es bewusst (noch) nicht – dafür bräuchte es eine KI-gestützte Texterkennung mit eigenem Backend und laufenden Kosten, das wäre ein separates, größeres Vorhaben.
+
+### Als PDF sichern mit sinnvollem Dateinamen
+
+Die Buttons "🖨 Drucken / PDF" (Rechnungen, Verträge, EÜR-Jahresexport) setzen vor dem Öffnen des Druckdialogs automatisch einen sprechenden Dateinamen (z. B. `Rechnung_RE-001_Bloom-Cosmetics_2026-08-10`), der von den meisten Browsern als Vorschlag im "Als PDF sichern"-Dialog übernommen wird. Der Zielordner wird weiterhin frei im Dialog gewählt – ein vollautomatisches Einsortieren in eigene Unterordner ist technisch nur mit browserspezifischen Funktionen (Chrome) oder einem eigenen Hintergrunddienst möglich und bewusst nicht Teil dieser Version.
 
 ## Hosten (z. B. für deine Frau zugänglich machen)
 
@@ -87,7 +96,7 @@ js/settings.js          Firmendaten-Formular
 js/clients.js           Kunden-Verwaltung
 js/invoices.js          Rechnungs-Editor & -Liste
 js/contracts.js         Vertrags-Editor & -Liste
-js/finance.js           Einnahmen & Ausgaben (EÜR)
+js/finance.js           Einnahmen & Ausgaben (EÜR) inkl. Jahresexport
 js/trends.js            TikTok-Trends-Ansicht & Trend-Journal
 js/trends-data.js       Kuratierte Trends-Liste (wöchentlich automatisch aktualisiert)
 js/main.js              Navigation & Übersicht

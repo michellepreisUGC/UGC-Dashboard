@@ -1,5 +1,5 @@
 import { Store } from './store.js';
-import { uid, eur, fmtDate, todayISO, addDays, el, showToast } from './util.js';
+import { uid, eur, fmtDate, todayISO, addDays, el, showToast, slugify, fileToDataUrl, checkAttachmentSize, printAsPdf } from './util.js';
 import { openClientModal } from './clients.js';
 
 let current = null; // invoice being edited
@@ -10,7 +10,10 @@ export function initInvoices(navigate) {
   document.getElementById('newInvoiceBtn').addEventListener('click', () => openEditor());
   document.getElementById('invoiceCancelBtn').addEventListener('click', () => navigate('invoices'));
   document.getElementById('invoiceSaveBtn').addEventListener('click', saveCurrent);
-  document.getElementById('invoicePrintBtn').addEventListener('click', () => window.print());
+  document.getElementById('invoicePrintBtn').addEventListener('click', () => {
+    const filename = `Rechnung_${current.number}_${slugify(current.clientName)}_${current.date}`;
+    printAsPdf(filename);
+  });
   document.addEventListener('client-saved', () => { if (current) renderForm(); });
 }
 
@@ -26,7 +29,7 @@ export function renderInvoiceList() {
     const statusClass = inv.status === 'paid' ? 'status-paid' : inv.status === 'draft' ? 'status-draft' : 'status-open';
     const statusLabel = inv.status === 'paid' ? 'Bezahlt' : inv.status === 'draft' ? 'Entwurf' : 'Offen';
     const tr = el('tr', {}, [
-      el('td', {}, inv.number || '—'),
+      el('td', {}, `${inv.number || '—'}${inv.attachmentName ? ' 📎' : ''}`),
       el('td', {}, fmtDate(inv.date)),
       el('td', {}, inv.clientName || '—'),
       el('td', {}, eur(total)),
@@ -51,7 +54,7 @@ function removeInvoice(inv) {
 function duplicateInvoice(inv) {
   const settings = Store.getSettings();
   const number = nextInvoiceNumber(settings);
-  const copy = { ...inv, id: uid(), number, date: todayISO(), status: 'draft', items: inv.items.map(i => ({ ...i, id: uid() })) };
+  const copy = { ...inv, id: uid(), number, date: todayISO(), status: 'draft', attachmentName: '', attachmentData: '', items: inv.items.map(i => ({ ...i, id: uid() })) };
   Store.saveInvoice(copy);
   Store.saveSettings({ nextInvoiceNumber: settings.nextInvoiceNumber + 1 });
   renderInvoiceList();
@@ -85,7 +88,9 @@ function openEditor(invoice = null) {
       vatRate: settings.kleinunternehmer ? 0 : 19,
       items: [blankItem()],
       notes: settings.defaultInvoiceNotes || '',
-      status: 'open'
+      status: 'open',
+      attachmentName: '',
+      attachmentData: ''
     };
   }
   document.getElementById('invoiceEditorTitle').textContent = invoice ? `Rechnung ${current.number}` : 'Neue Rechnung';
@@ -180,6 +185,26 @@ function renderForm() {
         </div>
       </div>
     </div>
+
+    <div class="form-section">
+      <h3>PDF-Anhang</h3>
+      <p class="field-hint" style="margin-bottom:10px;">Für bereits abgeschlossene Rechnungen: Original-PDF hier ablegen, dann die Eckdaten oben kurz eintragen.</p>
+      ${current.attachmentName ? `
+        <div class="attachment-row">
+          <span>📎 ${escapeHtml(current.attachmentName)}</span>
+          <div class="row-actions">
+            <button class="btn-ghost small" type="button" id="inv-attachmentOpen">Öffnen</button>
+            <button class="btn-ghost small" type="button" id="inv-attachmentRemove">Entfernen</button>
+          </div>
+        </div>
+      ` : `
+        <div class="form-row">
+          <div class="form-field full">
+            <input type="file" id="inv-attachmentInput" accept="application/pdf">
+          </div>
+        </div>
+      `}
+    </div>
   `;
 
   renderLineItems();
@@ -218,6 +243,35 @@ function renderForm() {
     renderLineItems();
     renderPreview();
   });
+
+  const attachmentInput = document.getElementById('inv-attachmentInput');
+  if (attachmentInput) {
+    attachmentInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!checkAttachmentSize(file)) { attachmentInput.value = ''; return; }
+      current.attachmentName = file.name;
+      current.attachmentData = await fileToDataUrl(file);
+      renderForm();
+      showToast('PDF angehängt');
+    });
+  }
+  const attachmentOpen = document.getElementById('inv-attachmentOpen');
+  if (attachmentOpen) {
+    attachmentOpen.addEventListener('click', () => {
+      const win = window.open();
+      win.document.write(`<iframe src="${current.attachmentData}" style="border:0;width:100%;height:100vh;"></iframe>`);
+    });
+  }
+  const attachmentRemove = document.getElementById('inv-attachmentRemove');
+  if (attachmentRemove) {
+    attachmentRemove.addEventListener('click', () => {
+      current.attachmentName = '';
+      current.attachmentData = '';
+      renderForm();
+      showToast('Anhang entfernt');
+    });
+  }
 }
 
 function renderLineItems() {

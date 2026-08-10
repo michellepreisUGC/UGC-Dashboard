@@ -1,6 +1,8 @@
 import { Store } from './store.js';
-import { uid, eur, fmtDate, todayISO, el, showToast, openModal, closeModal } from './util.js';
+import { uid, eur, fmtDate, todayISO, el, showToast, openModal, closeModal, slugify, printAsPdf } from './util.js';
 import { calcTotals } from './invoices.js';
+
+let goHome = null;
 
 export const EXPENSE_CATEGORIES = [
   'Wareneinkauf & Material',
@@ -50,11 +52,22 @@ function expenseRows(year) {
 }
 
 export function initFinance(navigate) {
+  goHome = navigate;
   document.getElementById('newIncomeBtn').addEventListener('click', () => openIncomeModal());
   document.getElementById('newExpenseBtn').addEventListener('click', () => openExpenseModal());
   document.getElementById('financeYearSelect').addEventListener('change', (e) => {
     selectedYear = Number(e.target.value);
     renderFinanceView();
+  });
+  document.getElementById('financeExportBtn').addEventListener('click', () => {
+    renderFinanceExport();
+    goHome('finance-export');
+  });
+  document.getElementById('financeExportBackBtn').addEventListener('click', () => goHome('finance'));
+  document.getElementById('financeExportPrintBtn').addEventListener('click', () => {
+    const settings = Store.getSettings();
+    const filename = `EUER_${selectedYear}_${slugify(settings.companyName || 'Uebersicht')}`;
+    printAsPdf(filename);
   });
 }
 
@@ -133,6 +146,89 @@ export function renderFinanceView() {
         breakdown.appendChild(row);
       });
   }
+}
+
+function renderFinanceExport() {
+  const settings = Store.getSettings();
+  const income = incomeRows(selectedYear);
+  const expenses = expenseRows(selectedYear);
+  const totalIncome = income.reduce((s, r) => s + r.amount, 0);
+  const totalExpenses = expenses.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const profit = totalIncome - totalExpenses;
+
+  const byCategory = {};
+  expenses.forEach(e => {
+    (byCategory[e.category] = byCategory[e.category] || []).push(e);
+  });
+
+  const incomeRowsHtml = income.length
+    ? income.map(r => `
+      <tr>
+        <td>${fmtDate(r.date)}</td>
+        <td>${escapeHtml(r.label)}</td>
+        <td class="num">${eur(r.amount)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="3" class="muted">Keine Einnahmen in diesem Jahr.</td></tr>`;
+
+  const expenseSections = Object.keys(byCategory).length
+    ? Object.entries(byCategory).sort((a, b) => a[0].localeCompare(b[0])).map(([cat, rows]) => {
+      const subtotal = rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      return `
+        <tr><td colspan="3" style="padding-top:16px; font-weight:700; color:#8A4E58;">${escapeHtml(cat)}</td></tr>
+        ${rows.map(r => `
+          <tr>
+            <td>${fmtDate(r.date)}</td>
+            <td>${escapeHtml(r.description) || '—'}</td>
+            <td class="num">${eur(r.amount)}</td>
+          </tr>`).join('')}
+        <tr><td></td><td class="muted">Zwischensumme ${escapeHtml(cat)}</td><td class="num" style="font-weight:600;">${eur(subtotal)}</td></tr>
+      `;
+    }).join('')
+    : `<tr><td colspan="3" class="muted">Keine Ausgaben in diesem Jahr.</td></tr>`;
+
+  const preview = document.getElementById('financeExportPreview');
+  preview.innerHTML = `
+    <div class="doc-header">
+      ${settings.logo ? `<img class="doc-logo" src="${settings.logo}">` : `<div class="doc-title" style="font-size:1.3rem">${escapeHtml(settings.companyName) || 'Deine Firma'}</div>`}
+      <div class="doc-company">
+        ${escapeHtml(settings.companyName) || ''}<br>
+        ${escapeHtml(settings.street) || ''}<br>
+        ${escapeHtml([settings.zip, settings.city].filter(Boolean).join(' '))}<br>
+        ${settings.taxId ? 'St.-Nr. ' + escapeHtml(settings.taxId) : ''} ${settings.vatId ? '· USt-IdNr. ' + escapeHtml(settings.vatId) : ''}
+      </div>
+    </div>
+
+    <div class="doc-title">Einnahmen-Überschuss-Rechnung ${selectedYear}</div>
+    <p class="muted" style="margin-bottom:24px;">Erstellt am ${fmtDate(todayISO())} · vereinfachte Übersicht, ersetzt keine Steuerberatung</p>
+
+    <div class="doc-totals" style="width:100%; margin-bottom:30px;">
+      <div class="row"><strong>Betriebseinnahmen gesamt</strong><span>${eur(totalIncome)}</span></div>
+      <div class="row"><strong>Betriebsausgaben gesamt</strong><span>${eur(totalExpenses)}</span></div>
+      <div class="row grand"><strong>Gewinn / Verlust (§4 Abs. 3 EStG)</strong><span>${eur(profit)}</span></div>
+    </div>
+
+    <h3 style="font-family: var(--font-display); color:#8A4E58; margin-bottom:8px;">Einnahmen</h3>
+    <table class="doc-table">
+      <thead><tr><th>Datum</th><th>Bezeichnung</th><th class="num">Betrag</th></tr></thead>
+      <tbody>${incomeRowsHtml}</tbody>
+    </table>
+
+    <h3 style="font-family: var(--font-display); color:#8A4E58; margin:26px 0 8px;">Ausgaben nach Kategorie</h3>
+    <table class="doc-table">
+      <thead><tr><th>Datum</th><th>Beschreibung</th><th class="num">Betrag</th></tr></thead>
+      <tbody>${expenseSections}</tbody>
+    </table>
+
+    <div class="doc-footer">
+      <span>${escapeHtml(settings.companyName)} · ${escapeHtml(settings.ownerName)}</span>
+      <span>Diese Aufstellung ist eine Arbeitshilfe und ersetzt keine Steuerberatung.</span>
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
 function openIncomeModal() {
