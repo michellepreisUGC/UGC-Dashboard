@@ -157,6 +157,8 @@ function followerDelta(history, key) {
   return { delta: latest[key] - past[key], fromDate: past.date };
 }
 
+const POSTS_PREVIEW_COUNT = 6;
+
 function postCard(post) {
   const thumb = post.thumbnail
     ? `<div class="social-post-thumb" style="background-image:url('${post.thumbnail}')"></div>`
@@ -169,8 +171,10 @@ function postCard(post) {
       ${thumb}
       <div class="social-post-body">
         <p class="social-post-caption">${post.caption ? escapeHtml(post.caption) : '(ohne Bildunterschrift)'}</p>
-        <p class="social-post-metrics muted small">${fmtNum(post.likes)} Likes · ${fmtNum(post.comments)} Kommentare · ${secondaryMetric}</p>
-        <p class="social-post-engagement">${fmtPct(post.engagementRate)} Interaktionsrate</p>
+        <div class="social-post-footer">
+          <span class="social-post-metrics">${fmtNum(post.likes)} Likes · ${fmtNum(post.comments)} Kommentare · ${secondaryMetric}</span>
+          <span class="social-post-rate">${fmtPct(post.engagementRate)}</span>
+        </div>
       </div>
     </a>`;
 }
@@ -179,7 +183,14 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
-function platformCard(platformKey, label, colorVar, platformData, history, historyKey) {
+function deltaBadge(delta) {
+  if (!delta) return `<span class="social-delta-badge">± 0 <span class="muted">/ 7 Tage</span></span>`;
+  const cls = delta.delta > 0 ? 'positive' : delta.delta < 0 ? 'negative' : '';
+  const sign = delta.delta > 0 ? '+' : '';
+  return `<span class="social-delta-badge ${cls}">${sign}${fmtNum(delta.delta)} <span class="muted">/ seit ${fmtDate(delta.fromDate)}</span></span>`;
+}
+
+function platformCard(platformKey, label, colorVar, platformData, history, historyKey, expanded) {
   if (!platformData) return '';
   if (platformData.error) {
     return `
@@ -193,30 +204,54 @@ function platformCard(platformKey, label, colorVar, platformData, history, histo
   const posts = platformData.posts || [];
   const avgEngagement = posts.length ? posts.reduce((s, p) => s + p.engagementRate, 0) / posts.length : 0;
   const spark = sparklineSvg(history, historyKey, colorVar);
+  const visiblePosts = expanded ? posts : posts.slice(0, POSTS_PREVIEW_COUNT);
+  const hasMore = posts.length > POSTS_PREVIEW_COUNT;
 
   return `
     <div class="card social-platform-card">
-      <div class="card-head"><h2>${label} <span class="muted small">${platformData.username ? '@' + platformData.username : ''}</span></h2></div>
-      <div class="stats-row three">
-        <div class="stat">
-          <span class="stat-value">${fmtNum(platformData.followers)}</span>
-          <span class="stat-label">Follower</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value ${delta && delta.delta < 0 ? 'negative' : ''}">${delta ? (delta.delta > 0 ? '+' : '') + fmtNum(delta.delta) : '–'}</span>
-          <span class="stat-label">seit ${delta ? fmtDate(delta.fromDate) : '7 Tagen'}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">${fmtPct(avgEngagement)}</span>
-          <span class="stat-label">Ø Interaktionsrate</span>
-        </div>
+      <div class="card-head">
+        <h2>${label}</h2>
+        <span class="muted small">${platformData.username ? '@' + platformData.username : ''}</span>
       </div>
-      ${spark ? `<div class="trend-sparkline-wrap">${spark}</div>` : ''}
+      <div class="social-header-row">
+        <div class="social-follower-block">
+          <span class="social-follower-count">${fmtNum(platformData.followers)}</span>
+          <span class="social-follower-label">Follower</span>
+        </div>
+        ${spark ? `<div class="social-sparkline-inline">${spark}</div>` : '<div class="social-sparkline-inline"></div>'}
+        ${deltaBadge(delta)}
+      </div>
+      <p class="social-secondary-stats">Ø Interaktionsrate: <strong>${fmtPct(avgEngagement)}</strong></p>
       <h3 class="section-title small-title">Letzte Beiträge</h3>
       <div class="social-posts-grid">
-        ${posts.length ? posts.map(postCard).join('') : '<p class="muted small">Noch keine Beitragsdaten.</p>'}
+        ${visiblePosts.length ? visiblePosts.map(postCard).join('') : '<p class="muted small">Noch keine Beitragsdaten.</p>'}
       </div>
+      ${hasMore ? `<button class="btn-ghost small social-show-more" data-expand-toggle="${platformKey}">${expanded ? 'Weniger anzeigen' : `Alle ${posts.length} Beiträge anzeigen`}</button>` : ''}
     </div>`;
+}
+
+let lastStatus = null;
+let lastData = null;
+const expandedPlatforms = new Set();
+
+function renderCards() {
+  const body = document.getElementById('analyticsBody');
+  const cards = [];
+  if (lastStatus.instagram.connected) {
+    cards.push(platformCard('instagram', 'Instagram', 'var(--rose-dark)', lastData.snapshot.instagram, lastData.history, 'instagramFollowers', expandedPlatforms.has('instagram')));
+  }
+  if (lastStatus.tiktok.connected) {
+    cards.push(platformCard('tiktok', 'TikTok', 'var(--gold)', lastData.snapshot.tiktok, lastData.history, 'tiktokFollowers', expandedPlatforms.has('tiktok')));
+  }
+  body.innerHTML = `<div class="social-analytics-grid">${cards.join('')}</div>`;
+
+  body.querySelectorAll('[data-expand-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.expandToggle;
+      if (expandedPlatforms.has(key)) expandedPlatforms.delete(key); else expandedPlatforms.add(key);
+      renderCards();
+    });
+  });
 }
 
 export async function renderAnalyticsView() {
@@ -265,14 +300,57 @@ export async function renderAnalyticsView() {
   }
 
   updatedLabel.textContent = `Letzter Sync: ${new Date(data.snapshot.fetchedAt).toLocaleString('de-DE')}`;
+  lastStatus = status;
+  lastData = data;
+  renderCards();
+}
 
-  const cards = [];
-  if (status.instagram.connected) {
-    cards.push(platformCard('instagram', 'Instagram', 'var(--rose-dark)', data.snapshot.instagram, data.history, 'instagramFollowers'));
-  }
-  if (status.tiktok.connected) {
-    cards.push(platformCard('tiktok', 'TikTok', 'var(--gold)', data.snapshot.tiktok, data.history, 'tiktokFollowers'));
+export async function renderOverviewSocialPreview() {
+  const container = document.getElementById('overviewSocialPreview');
+  if (!container) return;
+
+  let status;
+  try {
+    status = await fetchStatus();
+  } catch {
+    container.innerHTML = '<p class="muted small">Status konnte nicht geladen werden.</p>';
+    return;
   }
 
-  body.innerHTML = `<div class="social-analytics-grid">${cards.join('')}</div>`;
+  if (!status.instagram.connected && !status.tiktok.connected) {
+    container.innerHTML = '<p class="muted small">Noch nicht verbunden – siehe Firmendaten.</p>';
+    return;
+  }
+
+  let data;
+  try {
+    data = await fetchAnalyticsData();
+  } catch {
+    container.innerHTML = '<p class="muted small">Daten konnten nicht geladen werden.</p>';
+    return;
+  }
+
+  if (!data.snapshot) {
+    container.innerHTML = '<p class="muted small">Noch kein Sync gelaufen.</p>';
+    return;
+  }
+
+  const rows = [];
+  if (status.instagram.connected && data.snapshot.instagram) {
+    rows.push(overviewSocialRow('Instagram', data.snapshot.instagram, data.history, 'instagramFollowers'));
+  }
+  if (status.tiktok.connected && data.snapshot.tiktok) {
+    rows.push(overviewSocialRow('TikTok', data.snapshot.tiktok, data.history, 'tiktokFollowers'));
+  }
+  container.innerHTML = rows.join('') || '<p class="muted small">Noch keine Daten.</p>';
+}
+
+function overviewSocialRow(label, platformData, history, historyKey) {
+  const delta = followerDelta(history, historyKey);
+  return `
+    <div class="social-mini-row">
+      <span class="social-mini-label">${label}${platformData.username ? ' · @' + platformData.username : ''}</span>
+      <span class="social-mini-followers">${fmtNum(platformData.followers)}</span>
+      ${deltaBadge(delta)}
+    </div>`;
 }

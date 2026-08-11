@@ -23,6 +23,30 @@ const DEFAULT_SETTINGS = {
   location: null       // { name, latitude, longitude }
 };
 
+const TODO_CATEGORIES = ['today', 'week', 'important'];
+
+function emptyTodos() {
+  return {
+    today: [{ text: '', done: false }, { text: '', done: false }, { text: '', done: false }],
+    week: [{ text: '', done: false }, { text: '', done: false }, { text: '', done: false }],
+    important: [{ text: '', done: false }, { text: '', done: false }, { text: '', done: false }]
+  };
+}
+
+// Stellt sicher, dass jede Kategorie exakt 3 Einträge mit {text, done} hat,
+// auch wenn gespeicherte Daten unvollständig oder beschädigt sind.
+function normalizeTodos(raw) {
+  const out = emptyTodos();
+  TODO_CATEGORIES.forEach(cat => {
+    const items = Array.isArray(raw?.[cat]) ? raw[cat] : [];
+    out[cat] = out[cat].map((slot, i) => ({
+      text: typeof items[i]?.text === 'string' ? items[i].text : '',
+      done: Boolean(items[i]?.done)
+    }));
+  });
+  return out;
+}
+
 const DEFAULT_DATA = {
   settings: DEFAULT_SETTINGS,
   clients: [],
@@ -30,7 +54,8 @@ const DEFAULT_DATA = {
   contracts: [],
   expenses: [],
   incomeExtra: [],
-  trendNotes: []
+  trendNotes: [],
+  todos: emptyTodos()
 };
 
 function load() {
@@ -45,7 +70,8 @@ function load() {
       contracts: parsed.contracts || [],
       expenses: parsed.expenses || [],
       incomeExtra: parsed.incomeExtra || [],
-      trendNotes: parsed.trendNotes || []
+      trendNotes: parsed.trendNotes || [],
+      todos: normalizeTodos(parsed.todos)
     };
   } catch (e) {
     console.error('Konnte gespeicherte Daten nicht laden', e);
@@ -136,6 +162,12 @@ export const Store = {
   },
   deleteTrendNote(id) {
     state.trendNotes = state.trendNotes.filter(n => n.id !== id);
+    persist();
+  },
+
+  getTodos() { return state.todos; },
+  saveTodos(todos) {
+    state.todos = todos;
     persist();
   }
 };

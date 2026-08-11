@@ -8,7 +8,8 @@ import { initContracts, renderContractList, rightsInfo } from './contracts.js';
 import { initFinance, renderFinanceView } from './finance.js';
 import { initTrends, renderTrendsView } from './trends.js';
 import { CURATED_TRENDS } from './trends-data.js';
-import { initSocial, renderAnalyticsView, renderSocialSettingsSection } from './social.js';
+import { initSocial, renderAnalyticsView, renderSocialSettingsSection, renderOverviewSocialPreview } from './social.js';
+import { renderTodos } from './todos.js';
 
 const NAV_HIGHLIGHT = { 'invoice-editor': 'invoices', 'contract-editor': 'contracts', 'finance-export': 'finance' };
 
@@ -125,6 +126,9 @@ function renderOverview() {
       list.appendChild(row);
     });
   }
+
+  renderTodos();
+  renderOverviewSocialPreview();
 }
 
 function initNav() {
