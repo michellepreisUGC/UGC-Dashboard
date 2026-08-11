@@ -38,7 +38,7 @@ export function renderSettings() {
       <div class="form-row">
         <div class="form-field full">
           <label for="st-logo">Logo (optional)</label>
-          <input type="file" id="st-logo" accept="image/*">
+          <input type="file" id="st-logo" accept="image/*,.png,.jpg,.jpeg,.svg,.webp,.gif">
           <span class="field-hint">${s.logo ? 'Logo hinterlegt · neue Datei wählen zum Ersetzen' : 'Wird oben auf Rechnungen &amp; Verträgen angezeigt'}</span>
         </div>
       </div>
