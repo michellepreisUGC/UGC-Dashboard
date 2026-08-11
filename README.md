@@ -110,6 +110,10 @@ Im Netlify-Dashboard (nicht hier im Chat, das sind Zugangsdaten): **Site setting
 | `TIKTOK_CLIENT_KEY` | aus Schritt 2.5 |
 | `TIKTOK_CLIENT_SECRET` | aus Schritt 2.5 |
 | `TIKTOK_REDIRECT_URI` | `https://stirring-blancmange-6fa926.netlify.app/.netlify/functions/social-tiktok-callback` |
+| `BLOBS_SITE_ID` | Site ID aus **Project configuration → General → Site details** |
+| `BLOBS_TOKEN` | ein Personal Access Token aus **User settings → Applications → Personal access tokens → New access token** |
+
+Die letzten beiden werden gebraucht, weil Netlifys automatische Blobs-Erkennung (Speicher für Token & Sync-Daten) in der Praxis nicht zuverlässig funktioniert hat – mit den beiden Werten verbindet sich das Backend stattdessen manuell.
 
 Danach unter **Deploys → Trigger deploy → Clear cache and deploy site**, damit die neuen Umgebungsvariablen und die Backend-Abhängigkeit (`@netlify/blobs`) sauber übernommen werden.
 

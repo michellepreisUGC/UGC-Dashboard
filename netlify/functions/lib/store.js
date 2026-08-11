@@ -1,7 +1,14 @@
 const { getStore } = require('@netlify/blobs');
 
 // Ein Blob-Store für alles Social-Media-bezogene: OAuth-Status, Tokens, Snapshots.
+// Manuelle Konfiguration statt Zero-Config, da Netlifys automatische
+// Blobs-Erkennung in dieser Deploy-Umgebung nicht funktioniert hat.
 function socialStore() {
+  const siteID = process.env.BLOBS_SITE_ID;
+  const token = process.env.BLOBS_TOKEN;
+  if (siteID && token) {
+    return getStore({ name: 'social-analytics', siteID, token });
+  }
   return getStore('social-analytics');
 }
 
