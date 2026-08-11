@@ -35,6 +35,9 @@
       <button class="nav-item" data-view="trends">
         <span class="nav-icon">♪</span> TikTok-Trends
       </button>
+      <button class="nav-item" data-view="analytics">
+        <span class="nav-icon">⬈</span> Social Analytics
+      </button>
       <button class="nav-item" data-view="clients">
         <span class="nav-icon">♡</span> Kundinnen &amp; Kunden
       </button>
@@ -344,6 +347,18 @@
       </div>
     </section>
 
+    <!-- SOCIAL ANALYTICS -->
+    <section class="view" id="view-analytics">
+      <header class="view-header">
+        <div>
+          <h1>Social Analytics</h1>
+          <p class="subtitle" id="analyticsUpdatedLabel">Instagram &amp; TikTok auf einen Blick</p>
+        </div>
+        <button class="btn-ghost" id="analyticsSyncBtn">↻ Jetzt aktualisieren</button>
+      </header>
+      <div id="analyticsBody"></div>
+    </section>
+
     <!-- CLIENTS -->
     <section class="view" id="view-clients">
       <header class="view-header">
@@ -374,6 +389,8 @@
         <button class="btn-primary" id="settingsSaveBtn">Speichern</button>
       </header>
       <div class="card settings-card" id="settingsForm"></div>
+
+      <div class="card" id="socialConnectCard" style="margin-top:20px;"></div>
     </section>
 
   </main>

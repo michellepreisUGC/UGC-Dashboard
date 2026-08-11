@@ -1,0 +1,9 @@
+{
+  "name": "atelier-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Atelier Dashboard – statisches Frontend + Netlify Functions für Social-Media-Analytics",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

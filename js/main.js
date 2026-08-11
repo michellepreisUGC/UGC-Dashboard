@@ -8,6 +8,7 @@ import { initContracts, renderContractList, rightsInfo } from './contracts.js';
 import { initFinance, renderFinanceView } from './finance.js';
 import { initTrends, renderTrendsView } from './trends.js';
 import { CURATED_TRENDS } from './trends-data.js';
+import { initSocial, renderAnalyticsView, renderSocialSettingsSection } from './social.js';
 
 const NAV_HIGHLIGHT = { 'invoice-editor': 'invoices', 'contract-editor': 'contracts', 'finance-export': 'finance' };
 
@@ -22,9 +23,10 @@ function navigate(view) {
   if (view === 'invoices') renderInvoiceList();
   if (view === 'contracts') renderContractList();
   if (view === 'clients') renderClientsView();
-  if (view === 'settings') renderSettings();
+  if (view === 'settings') { renderSettings(); renderSocialSettingsSection(); }
   if (view === 'finance') renderFinanceView();
   if (view === 'trends') renderTrendsView();
+  if (view === 'analytics') renderAnalyticsView();
 }
 
 function currentYearFinance() {
@@ -145,7 +147,8 @@ function boot() {
   initFinance(navigate);
   initTrends();
   initWeather();
-  navigate('overview');
+  const initialView = initSocial(navigate);
+  navigate(initialView || 'overview');
 }
 
 document.addEventListener('DOMContentLoaded', boot);

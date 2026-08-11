@@ -1,0 +1,17 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+# Läuft stündlich; die Funktion selbst prüft, ob es gerade 8 Uhr Berliner Zeit ist,
+# damit der Sync unabhängig von Sommer-/Winterzeit immer zur gewünschten lokalen Uhrzeit läuft.
+[functions."social-fetch-scheduled"]
+  schedule = "0 * * * *"

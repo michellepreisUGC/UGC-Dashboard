@@ -13,6 +13,7 @@ Reines HTML/CSS/JavaScript, kein Build-Tool, keine Abhängigkeiten.
 - **TikTok-Trends**: Kuratierte Liste aktueller Trends (Sounds, Challenges, Formate, Hashtags, UGC-Tipps) mit Quellenangabe, Schnelllinks zum offiziellen TikTok Creative Center sowie ein eigenes Trend-Journal zum Festhalten selbst entdeckter Ideen. Die kuratierte Liste wird wöchentlich automatisch aktualisiert (siehe unten).
 - **Kund:innen**: Einfache Kontaktverwaltung zur Wiederverwendung in Rechnungen & Verträgen.
 - **Firmendaten**: Zentrale Grundvorlage (Firmenname, Sitz, Steuernummer, Bankverbindung, Logo, Standardtexte), die automatisch in alle Dokumente einfließt.
+- **Social Analytics**: Instagram- & TikTok-Follower und die letzten Beiträge (Likes, Kommentare, Reichweite/Aufrufe, Interaktionsrate) auf einen Blick, inkl. Follower-Trend und automatischem täglichem Sync (~8 Uhr) – siehe [Setup-Anleitung](#social-analytics-instagram--tiktok-einrichten) unten.
 
 ## Wichtige Hinweise
 
@@ -70,6 +71,57 @@ Wichtig: Nach dem Hosten die **Firmendaten einmalig direkt im Live-Dashboard** e
 
 **Repo:** [github.com/michellepreisUGC/UGC-Dashboard](https://github.com/michellepreisUGC/UGC-Dashboard) – wenn dieses Repo z. B. mit Netlify verbunden wird, deployt die gehostete Seite automatisch neu, sobald neuer Code (z. B. aktualisierte Trends, siehe unten) gepusht wird.
 
+## Social Analytics (Instagram & TikTok) einrichten
+
+Anders als der Rest der App braucht diese Funktion echte Zugangsdaten von Meta/TikTok sowie ein kleines Backend (**Netlify Functions**, im Ordner `netlify/functions/`), weil Zugangstoken nicht sicher im Browser gespeichert werden können. Das Backend ist bereits fertig gebaut – es fehlen nur noch deine eigenen App-Zugangsdaten. Diese Schritte kannst du nur selbst erledigen (eigene Logins bei Meta/TikTok):
+
+### 1. Instagram (Meta for Developers)
+
+1. Stelle sicher, dass dein Instagram-Account ein **Business- oder Creator-Konto** ist (Instagram-App → Einstellungen → Konto → Kontotyp wechseln).
+2. Gehe zu [developers.facebook.com/apps](https://developers.facebook.com/apps) → **App erstellen** → Typ „Sonstige" → „Unternehmen".
+3. Im App-Dashboard: Produkt **„Instagram"** hinzufügen → „Instagram API Setup with Instagram Login".
+4. Dort unter „Rollen" deinen eigenen Instagram-Account als **Instagram-Tester** hinzufügen – die Einladung musst du zusätzlich in der Instagram-App selbst annehmen (Einstellungen → Apps und Websites → Tester-Einladungen). So funktioniert die Verbindung sofort, ganz ohne auf eine App-Prüfung durch Meta warten zu müssen.
+5. Als **Weiterleitungs-URI** einträgst du:
+   ```
+   https://stirring-blancmange-6fa926.netlify.app/.netlify/functions/social-instagram-callback
+   ```
+6. Notiere dir **Instagram-App-ID** und **Instagram-App-Secret** von dieser Produktseite.
+
+### 2. TikTok (TikTok for Developers)
+
+1. Gehe zu [developers.tiktok.com/apps](https://developers.tiktok.com/apps) → **App erstellen**.
+2. Produkt **„Login Kit"** hinzufügen, als Redirect-URI:
+   ```
+   https://stirring-blancmange-6fa926.netlify.app/.netlify/functions/social-tiktok-callback
+   ```
+3. Unter „Scopes" folgende Berechtigungen anfragen: `user.info.basic`, `user.info.stats`, `video.list`.
+4. Die App startet im Sandbox-/Entwicklungsmodus – unter „Target Users" (Sandbox) deinen eigenen TikTok-Account als Test-User hinzufügen, dann funktioniert die Verbindung sofort ohne Wartezeit auf eine App-Prüfung.
+5. **Client Key** und **Client Secret** findest du unter „Basic Information".
+
+### 3. Zugangsdaten in Netlify eintragen
+
+Im Netlify-Dashboard (nicht hier im Chat, das sind Zugangsdaten): **Site settings → Environment variables → Add a variable**, jeweils einzeln:
+
+| Variable | Wert |
+|---|---|
+| `INSTAGRAM_APP_ID` | aus Schritt 1.6 |
+| `INSTAGRAM_APP_SECRET` | aus Schritt 1.6 |
+| `INSTAGRAM_REDIRECT_URI` | `https://stirring-blancmange-6fa926.netlify.app/.netlify/functions/social-instagram-callback` |
+| `TIKTOK_CLIENT_KEY` | aus Schritt 2.5 |
+| `TIKTOK_CLIENT_SECRET` | aus Schritt 2.5 |
+| `TIKTOK_REDIRECT_URI` | `https://stirring-blancmange-6fa926.netlify.app/.netlify/functions/social-tiktok-callback` |
+
+Danach unter **Deploys → Trigger deploy → Clear cache and deploy site**, damit die neuen Umgebungsvariablen und die Backend-Abhängigkeit (`@netlify/blobs`) sauber übernommen werden.
+
+### 4. Verbinden
+
+Im Dashboard unter **Firmendaten → „Social Media verbinden"** auf „Verbinden" klicken (Instagram und/oder TikTok), einmalig einloggen und bestätigen. Danach unter **Social Analytics** auf „Jetzt aktualisieren" klicken, um den ersten Datenabruf anzustoßen. Ab dann läuft der Sync automatisch jeden Tag gegen 8 Uhr (Berliner Zeit).
+
+**Hinweise:**
+- Follower-Zahlen und Beitrags-Kennzahlen sind bewusst über einen Server-Endpunkt statt direkt im Frontend abrufbar – die eigentlichen Zugangstoken verlassen den Server nie. Die Analytics-Daten selbst (Follower, Post-Likes etc.) sind aber weitgehend ohnehin öffentlich auf den Profilen sichtbar; eine zusätzliche Passwortsperre für das Dashboard gibt es (wie schon bisher) nicht – bei Bedarf lässt sich das Netlify-Site-Passwort (Site settings → Visitor access) nachrüsten.
+- Instagram-Long-Lived-Token laufen nach 60 Tagen ab und werden automatisch beim täglichen Sync erneuert; TikTok-Access-Token laufen sogar nur 24h, werden aber ebenfalls automatisch per Refresh-Token erneuert. Solange mindestens alle paar Wochen ein Sync läuft, bleibt die Verbindung aktiv.
+- Falls Meta oder TikTok ihre API-Felder mal ändern: Die komplette API-Anbindung liegt gebündelt in `netlify/functions/lib/instagram.js` und `netlify/functions/lib/tiktok.js`.
+
 ## TikTok-Trends: wöchentliche Auto-Recherche
 
 Es gibt keine offizielle kostenlose TikTok-API für Trends, daher wird die kuratierte Liste stattdessen durch einen automatisierten Claude-Routine-Lauf aktuell gehalten:
@@ -99,7 +151,18 @@ js/contracts.js         Vertrags-Editor & -Liste
 js/finance.js           Einnahmen & Ausgaben (EÜR) inkl. Jahresexport
 js/trends.js            TikTok-Trends-Ansicht & Trend-Journal
 js/trends-data.js       Kuratierte Trends-Liste (wöchentlich automatisch aktualisiert)
+js/social.js            Social-Analytics-Ansicht & Connect-UI in den Firmendaten
 js/main.js              Navigation & Übersicht
+
+netlify.toml                              Netlify-Konfiguration (Functions, Redirects, Scheduled Sync)
+netlify/functions/social-*-start.js        OAuth-Start (Weiterleitung zu Instagram/TikTok)
+netlify/functions/social-*-callback.js     OAuth-Callback (Token-Austausch, Speicherung)
+netlify/functions/social-status.js         Verbindungsstatus für die Connect-UI
+netlify/functions/social-disconnect.js     Verbindung trennen
+netlify/functions/social-sync-now.js       Manueller Sync-Trigger ("Jetzt aktualisieren")
+netlify/functions/social-fetch-scheduled.js Täglicher Auto-Sync (~8 Uhr Berliner Zeit)
+netlify/functions/social-analytics-data.js  Liefert Snapshot + Follower-Verlauf ans Frontend
+netlify/functions/lib/                     Instagram-/TikTok-API-Anbindung, Sync-Logik, Blob-Speicher
 ```
 
 ## Nächste Schritte (optional)
