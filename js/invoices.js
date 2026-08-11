@@ -170,9 +170,6 @@ function renderForm() {
 
     <div class="form-section">
       <h3>Positionen</h3>
-      <div class="line-item-head">
-        <span>Beschreibung</span><span>Menge</span><span>Preis</span><span>Summe</span><span></span>
-      </div>
       <div class="line-items" id="lineItems"></div>
       <button class="btn-ghost small" id="addItemBtn" type="button">+ Position hinzufügen</button>
     </div>
@@ -281,11 +278,24 @@ function renderLineItems() {
     const row = document.createElement('div');
     row.className = 'line-item-row';
     row.innerHTML = `
-      <input type="text" placeholder="z. B. UGC-Video (15s, vertikal)" value="${item.desc}" data-field="desc">
-      <input type="number" min="0" step="1" value="${item.qty}" data-field="qty">
-      <input type="number" min="0" step="0.01" value="${item.price}" data-field="price">
-      <span class="line-sum">${eur((item.qty || 0) * (item.price || 0))}</span>
-      <button class="icon-btn" type="button" title="Entfernen">✕</button>
+      <div class="line-item-desc-row">
+        <input type="text" placeholder="z. B. UGC-Video (15s, vertikal)" value="${item.desc}" data-field="desc">
+      </div>
+      <div class="line-item-meta-row">
+        <div class="line-item-field">
+          <label>Menge</label>
+          <input type="number" min="0" step="1" value="${item.qty}" data-field="qty">
+        </div>
+        <div class="line-item-field">
+          <label>Preis (€)</label>
+          <input type="number" min="0" step="0.01" value="${item.price}" data-field="price">
+        </div>
+        <div class="line-item-field">
+          <label>Summe</label>
+          <span class="line-sum line-item-sum-value">${eur((item.qty || 0) * (item.price || 0))}</span>
+        </div>
+        <button class="icon-btn line-item-remove" type="button" title="Entfernen">✕</button>
+      </div>
     `;
     row.querySelectorAll('input').forEach(inp => {
       inp.addEventListener('input', () => {

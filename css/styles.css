@@ -244,10 +244,18 @@ input, textarea, select{ font-family: inherit; }
 .settings-card .form-section:last-child{ border-bottom:none; }
 
 /* line items */
-.line-items{ display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
-.line-item-row{ display:grid; grid-template-columns: 3fr 1fr 1fr 1fr auto; gap:8px; align-items:center; }
-.line-item-row input{ padding:9px 10px; border-radius:8px; border:1px solid var(--border); background: var(--surface-alt); font-size:.88rem; }
-.line-item-head{ display:grid; grid-template-columns: 3fr 1fr 1fr 1fr auto; gap:8px; font-size:.72rem; color: var(--ink-faint); text-transform:uppercase; padding: 0 2px; }
+.line-items{ display:flex; flex-direction:column; gap:10px; margin-bottom:10px; }
+.line-item-row{
+  background: var(--surface-alt); border-radius: var(--radius-sm);
+  padding: 10px 12px; display:flex; flex-direction:column; gap:8px;
+}
+.line-item-row input{ padding:9px 10px; border-radius:8px; border:1px solid var(--border); background:#fff; font-size:.88rem; width:100%; box-sizing:border-box; }
+.line-item-desc-row input{ font-weight:600; }
+.line-item-meta-row{ display:grid; grid-template-columns: 64px 84px minmax(0,1fr) auto; gap:8px; align-items:end; }
+.line-item-field{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.line-item-field label{ font-size:.66rem; text-transform:uppercase; letter-spacing:.03em; color: var(--ink-faint); }
+.line-item-sum-value{ padding:9px 0; font-size:.88rem; font-weight:700; color: var(--rose-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.line-item-remove{ align-self:end; }
 
 /* ---------- Editor layout ---------- */
 .editor-layout{ display:grid; grid-template-columns: 420px 1fr; gap:24px; align-items:start; }
