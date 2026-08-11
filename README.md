@@ -1,4 +1,4 @@
-# Atelier Dashboard
+# UGC-Dashboard
 
 Ein privates Dashboard mit Wetter, Rechnungs- und Vertragsgenerator für UGC-Kund:innen.
 Reines HTML/CSS/JavaScript, kein Build-Tool, keine Abhängigkeiten.

@@ -1,5 +1,5 @@
 import { Store } from './store.js';
-import { uid, eur, fmtDate, todayISO, el, showToast, slugify, fileToDataUrl, checkAttachmentSize, printAsPdf } from './util.js';
+import { uid, eur, fmtDate, todayISO, addMonths, el, showToast, slugify, fileToDataUrl, checkAttachmentSize, printAsPdf } from './util.js';
 import { openClientModal } from './clients.js';
 
 let current = null;
@@ -12,6 +12,43 @@ const DEFAULT_SECTIONS = {
   termination: 'Dieser Vertrag kann von beiden Parteien mit einer Frist von 14 Tagen zum Ende eines Kalendermonats in Textform gekündigt werden. Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt. Bereits erbrachte Leistungen sind in jedem Fall zu vergüten.',
   finalProvisions: 'Änderungen und Ergänzungen dieses Vertrages bedürfen der Textform. Sollte eine Bestimmung dieses Vertrages unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt. Es gilt das Recht der Bundesrepublik Deutschland.'
 };
+
+const DURATION_LABELS = { '1': '1 Monat', '3': '3 Monate', '6': '6 Monate', '12': '12 Monate' };
+
+function usageRightsBasis(c) {
+  if (c.deliveryDate) return { date: c.deliveryDate, label: 'Liefertermin' };
+  if (c.startDate) return { date: c.startDate, label: 'Beginn' };
+  return { date: c.date, label: 'Vertragsdatum' };
+}
+
+function computeEndDateFromDuration(c) {
+  if (!c.usageRightsDurationPreset || c.usageRightsDurationPreset === 'custom') return c.usageRightsEndDate;
+  const basis = usageRightsBasis(c).date;
+  if (!basis) return c.usageRightsEndDate;
+  return addMonths(basis, Number(c.usageRightsDurationPreset));
+}
+
+function usageRightsHint(c) {
+  if (c.usageRightsDurationPreset === 'custom') return 'Datum frei wählbar.';
+  const basis = usageRightsBasis(c);
+  if (!basis.date) return 'Bitte zuerst Beginn oder Liefertermin eintragen.';
+  const end = computeEndDateFromDuration(c);
+  return `→ gültig bis ${fmtDate(end)} (ab ${basis.label} ${fmtDate(basis.date)})`;
+}
+
+function usageRightsClause(c) {
+  if (c.usageRightsUnlimited !== false) {
+    return 'Die eingeräumten Nutzungsrechte gelten zeitlich unbegrenzt.';
+  }
+  const scopeText = c.usageRightsScope ? ` (${escapeHtml(c.usageRightsScope)})` : '';
+  const endText = `gültig bis <strong>${fmtDate(c.usageRightsEndDate) || '—'}</strong>`;
+  if (c.usageRightsDurationPreset && c.usageRightsDurationPreset !== 'custom') {
+    const basis = usageRightsBasis(c);
+    const durationLabel = DURATION_LABELS[c.usageRightsDurationPreset] || `${c.usageRightsDurationPreset} Monate`;
+    return `Die eingeräumten Nutzungsrechte sind befristet auf ${durationLabel}${scopeText} ab ${basis.label} (${fmtDate(basis.date) || '—'}) und damit ${endText}.`;
+  }
+  return `Die eingeräumten Nutzungsrechte sind befristet${scopeText ? ' auf' + scopeText : ''} und ${endText}.`;
+}
 
 export function daysUntil(dateStr) {
   const today = new Date(todayISO() + 'T00:00:00');
@@ -146,6 +183,10 @@ function duplicateContract(c) {
 function openEditor(contract = null) {
   if (contract) {
     current = JSON.parse(JSON.stringify(contract));
+    // Ältere Verträge kennen noch kein Dauer-Preset – vorhandenes Datum als "Individuell" übernehmen.
+    if (!current.usageRightsDurationPreset) {
+      current.usageRightsDurationPreset = current.usageRightsEndDate ? 'custom' : '3';
+    }
   } else {
     current = {
       id: uid(),
@@ -160,6 +201,7 @@ function openEditor(contract = null) {
       paymentTerms: 'Die Vergütung ist innerhalb von 14 Tagen nach Rechnungsstellung fällig.',
       status: 'draft',
       usageRightsUnlimited: true,
+      usageRightsDurationPreset: '3',
       usageRightsEndDate: '',
       usageRightsScope: '',
       followUpDone: false,
@@ -240,14 +282,25 @@ function renderForm() {
           <label for="ct-usageRightsUnlimited">Gültigkeit</label>
           <select id="ct-usageRightsUnlimited">
             <option value="true" ${current.usageRightsUnlimited !== false ? 'selected' : ''}>Zeitlich unbegrenzt</option>
-            <option value="false" ${current.usageRightsUnlimited === false ? 'selected' : ''}>Befristet bis</option>
+            <option value="false" ${current.usageRightsUnlimited === false ? 'selected' : ''}>Befristet</option>
           </select>
         </div>
-        <div class="form-field ${current.usageRightsUnlimited !== false ? 'hidden' : ''}" id="ct-usageRightsEndDateWrap">
+        <div class="form-field ${current.usageRightsUnlimited !== false ? 'hidden' : ''}" id="ct-usageRightsDurationWrap">
+          <label for="ct-usageRightsDuration">Dauer</label>
+          <select id="ct-usageRightsDuration">
+            <option value="1" ${current.usageRightsDurationPreset === '1' ? 'selected' : ''}>1 Monat</option>
+            <option value="3" ${(current.usageRightsDurationPreset || '3') === '3' ? 'selected' : ''}>3 Monate</option>
+            <option value="6" ${current.usageRightsDurationPreset === '6' ? 'selected' : ''}>6 Monate</option>
+            <option value="12" ${current.usageRightsDurationPreset === '12' ? 'selected' : ''}>12 Monate</option>
+            <option value="custom" ${current.usageRightsDurationPreset === 'custom' ? 'selected' : ''}>Individuell (Datum wählen)</option>
+          </select>
+        </div>
+        <div class="form-field ${current.usageRightsUnlimited !== false || current.usageRightsDurationPreset !== 'custom' ? 'hidden' : ''}" id="ct-usageRightsEndDateWrap">
           <label for="ct-usageRightsEndDate">Gültig bis</label>
           <input type="date" id="ct-usageRightsEndDate" value="${current.usageRightsEndDate || ''}">
         </div>
       </div>
+      <p class="field-hint ${current.usageRightsUnlimited !== false ? 'hidden' : ''}" id="ct-usageRightsHint">${usageRightsHint(current)}</p>
       <div class="form-row ${current.usageRightsUnlimited !== false ? 'hidden' : ''}" id="ct-usageRightsScopeWrap">
         <div class="form-field full">
           <label for="ct-usageRightsScope">Umfang der Befristung (optional)</label>
@@ -308,9 +361,18 @@ function renderForm() {
     }
   });
 
+  const recomputeUsageRightsEndDate = () => {
+    if (current.usageRightsUnlimited === false && current.usageRightsDurationPreset !== 'custom') {
+      current.usageRightsEndDate = computeEndDateFromDuration(current);
+      const hint = document.getElementById('ct-usageRightsHint');
+      if (hint) hint.textContent = usageRightsHint(current);
+    }
+  };
+
   const bind = (id, key) => {
     document.getElementById(id).addEventListener('input', (e) => {
       current[key] = e.target.value;
+      if (key === 'date' || key === 'startDate' || key === 'deliveryDate') recomputeUsageRightsEndDate();
       renderPreview();
     });
   };
@@ -320,6 +382,13 @@ function renderForm() {
 
   document.getElementById('ct-usageRightsUnlimited').addEventListener('change', (e) => {
     current.usageRightsUnlimited = e.target.value === 'true';
+    recomputeUsageRightsEndDate();
+    renderForm();
+    renderPreview();
+  });
+  document.getElementById('ct-usageRightsDuration').addEventListener('change', (e) => {
+    current.usageRightsDurationPreset = e.target.value;
+    recomputeUsageRightsEndDate();
     renderForm();
     renderPreview();
   });
@@ -410,9 +479,7 @@ function renderPreview() {
     <div class="contract-section">
       <h3>§3 Nutzungsrechte</h3>
       <p class="body-text">${escapeHtml(current.usageRights)}</p>
-      <p class="body-text">${current.usageRightsUnlimited !== false
-        ? 'Die eingeräumten Nutzungsrechte gelten zeitlich unbegrenzt.'
-        : `Die eingeräumten Nutzungsrechte sind befristet${current.usageRightsScope ? ' auf ' + escapeHtml(current.usageRightsScope) : ''} und gültig bis <strong>${fmtDate(current.usageRightsEndDate) || '—'}</strong>.`}</p>
+      <p class="body-text">${usageRightsClause(current)}</p>
     </div>
 
     <div class="contract-section">

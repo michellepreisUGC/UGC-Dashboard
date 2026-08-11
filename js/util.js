@@ -17,6 +17,12 @@ export const addDays = (iso, days) => {
   return d.toISOString().slice(0, 10);
 };
 
+export const addMonths = (iso, months) => {
+  const d = new Date(iso + 'T00:00:00');
+  d.setMonth(d.getMonth() + Number(months || 0));
+  return d.toISOString().slice(0, 10);
+};
+
 export function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {

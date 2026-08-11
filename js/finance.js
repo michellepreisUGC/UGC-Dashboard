@@ -1,5 +1,5 @@
 import { Store } from './store.js';
-import { uid, eur, fmtDate, todayISO, el, showToast, openModal, closeModal, slugify, printAsPdf } from './util.js';
+import { uid, eur, fmtDate, todayISO, el, showToast, openModal, closeModal, slugify, printAsPdf, fileToDataUrl, checkAttachmentSize } from './util.js';
 import { calcTotals } from './invoices.js';
 
 let goHome = null;
@@ -112,14 +112,18 @@ export function renderFinanceView() {
   expenseBody.innerHTML = '';
   document.getElementById('expenseEmptyState').classList.toggle('hidden', expenses.length > 0);
   expenses.forEach(row => {
+    const actions = [];
+    if (row.attachmentData) {
+      actions.push(el('button', { class: 'icon-btn', title: 'Beleg öffnen', onclick: () => openAttachment(row.attachmentData) }, '📎'));
+    }
+    actions.push(el('button', { class: 'icon-btn', title: 'Löschen', onclick: () => { Store.deleteExpense(row.id); renderFinanceView(); showToast('Ausgabe gelöscht'); } }, '✕'));
+
     const tr = el('tr', {}, [
       el('td', {}, fmtDate(row.date)),
       el('td', {}, row.category || '—'),
       el('td', {}, row.description || '—'),
       el('td', { class: 'num' }, eur(row.amount)),
-      el('td', {}, el('div', { class: 'row-actions' }, [
-        el('button', { class: 'icon-btn', title: 'Löschen', onclick: () => { Store.deleteExpense(row.id); renderFinanceView(); showToast('Ausgabe gelöscht'); } }, '✕')
-      ]))
+      el('td', {}, el('div', { class: 'row-actions' }, actions))
     ]);
     expenseBody.appendChild(tr);
   });
@@ -226,6 +230,11 @@ function renderFinanceExport() {
   `;
 }
 
+function openAttachment(dataUrl) {
+  const win = window.open();
+  win.document.write(`<iframe src="${dataUrl}" style="border:0;width:100%;height:100vh;"></iframe>`);
+}
+
 function escapeHtml(str) {
   if (str == null) return '';
   return String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -276,18 +285,34 @@ function openExpenseModal() {
     el('div', { class: 'form-row' }, [
       el('div', { class: 'form-field full' }, [ el('label', {}, 'Beschreibung'), el('input', { id: 'exp-description', placeholder: 'z. B. Adobe Creative Cloud Abo' }) ])
     ]),
+    el('div', { class: 'form-row' }, [
+      el('div', { class: 'form-field full' }, [
+        el('label', {}, 'Rechnung/Beleg (PDF, optional)'),
+        el('input', { type: 'file', id: 'exp-attachment', accept: 'application/pdf' }),
+        el('span', { class: 'field-hint' }, 'Für Rückfragen vom Finanzamt direkt griffbereit, statt in Mails zu suchen.')
+      ])
+    ]),
     el('div', { class: 'modal-actions' }, [
       el('button', { class: 'btn-ghost', onclick: closeModal }, 'Abbrechen'),
       el('button', {
-        class: 'btn-primary', onclick: () => {
+        class: 'btn-primary', onclick: async () => {
           const amount = Number(document.getElementById('exp-amount').value) || 0;
           const description = document.getElementById('exp-description').value.trim();
+          const file = document.getElementById('exp-attachment').files[0];
+          let attachmentName = '', attachmentData = '';
+          if (file) {
+            if (!checkAttachmentSize(file)) return;
+            attachmentName = file.name;
+            attachmentData = await fileToDataUrl(file);
+          }
           Store.saveExpense({
             id: uid(),
             date: document.getElementById('exp-date').value,
             amount,
             category: document.getElementById('exp-category').value,
-            description
+            description,
+            attachmentName,
+            attachmentData
           });
           closeModal();
           renderFinanceView();
