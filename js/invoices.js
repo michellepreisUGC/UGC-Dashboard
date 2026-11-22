@@ -1,5 +1,5 @@
 import { Store } from './store.js';
-import { uid, eur, fmtDate, addDays, el, showToast, slugify, fileToDataUrl, checkAttachmentSize, printAsPdf } from './util.js';
+import { uid, eur, fmtDate, fmtNum, fmtPct, addDays, el, showToast, slugify, fileToDataUrl, checkAttachmentSize, printAsPdf } from './util.js';
 import { openClientModal } from './clients.js';
 
 const PAYMENT_TERMS = [7, 14, 30];
@@ -374,14 +374,14 @@ function renderPreview() {
   const itemsRows = current.items.map(it => `
     <tr>
       <td>${escapeHtml(it.desc) || '—'}</td>
-      <td class="num">${it.qty}</td>
+      <td class="num">${fmtNum(it.qty)}</td>
       <td class="num">${eur(it.price)}</td>
       <td class="num">${eur((it.qty || 0) * (it.price || 0))}</td>
     </tr>`).join('');
 
   const vatLine = settings.kleinunternehmer
     ? `<div class="row">Umsatzsteuer<span>0,00 € (§19 UStG)</span></div>`
-    : `<div class="row">zzgl. ${current.vatRate}% USt.<span>${eur(totals.vat)}</span></div>`;
+    : `<div class="row">zzgl. ${fmtPct(current.vatRate / 100)} USt.<span>${eur(totals.vat)}</span></div>`;
 
   const companyDetails = [
     ['Steuernummer', settings.taxId],
@@ -392,7 +392,7 @@ function renderPreview() {
 
   preview.innerHTML = `
     <div class="doc-header">
-      ${settings.logo ? `<img class="doc-logo" src="${settings.logo}">` : `<div class="doc-title">${escapeHtml(settings.companyName) || 'Deine Firma'}</div>`}
+      <div class="doc-title">${escapeHtml(settings.companyName) || 'Deine Firma'}</div>
       <div class="doc-company">
         <strong>${escapeHtml(settings.companyName) || ''}</strong><br>
         ${escapeHtml(settings.ownerName) || ''}<br>

@@ -1,4 +1,4 @@
-import { showToast, fmtDate, addDays } from './util.js';
+import { showToast, fmtDate, addDays, fmtNum, fmtPct } from './util.js';
 
 let goHome = null;
 
@@ -27,9 +27,6 @@ async function triggerSync() {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
-
-const fmtNum = (n) => (Number(n) || 0).toLocaleString('de-DE');
-const fmtPct = (n) => `${((Number(n) || 0) * 100).toLocaleString('de-DE', { maximumFractionDigits: 1 })} %`;
 
 function handleQueryParams() {
   const params = new URLSearchParams(window.location.search);

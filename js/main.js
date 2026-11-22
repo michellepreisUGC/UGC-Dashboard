@@ -1,5 +1,5 @@
 import { Store } from './store.js';
-import { fmtDate, eur } from './util.js';
+import { fmtDate, eur, fmtNum } from './util.js';
 import { initWeather } from './weather.js';
 import { renderSettings } from './settings.js';
 import { renderClientsView } from './clients.js';
@@ -53,10 +53,10 @@ function renderOverview() {
   const openInvoices = invoices.filter(i => i.status === 'open');
   const openSum = openInvoices.reduce((sum, i) => sum + calcTotals(i).gross, 0);
 
-  document.getElementById('statOpenInvoices').textContent = openInvoices.length;
+  document.getElementById('statOpenInvoices').textContent = fmtNum(openInvoices.length);
   document.getElementById('statInvoiceSum').textContent = eur(openSum);
-  document.getElementById('statContracts').textContent = contracts.length;
-  document.getElementById('statClients').textContent = clients.length;
+  document.getElementById('statContracts').textContent = fmtNum(contracts.length);
+  document.getElementById('statClients').textContent = fmtNum(clients.length);
 
   const fin = currentYearFinance();
   document.getElementById('overviewFinanceYear').textContent = `· ${fin.year}`;

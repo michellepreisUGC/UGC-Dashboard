@@ -1,6 +1,12 @@
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-export const eur = (n) => (Number(n) || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+const currencyFormat = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', useGrouping: 'always' });
+const numberFormat = new Intl.NumberFormat('de-DE', { useGrouping: 'always' });
+const percentFormat = new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 1 });
+
+export const eur = (n) => currencyFormat.format(Number(n) || 0);
+export const fmtNum = (n) => numberFormat.format(Number(n) || 0);
+export const fmtPct = (n) => percentFormat.format(Number(n) || 0);
 
 export const todayISO = () => new Date().toISOString().slice(0, 10);
 
