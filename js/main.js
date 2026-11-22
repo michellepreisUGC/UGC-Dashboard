@@ -6,8 +6,6 @@ import { renderClientsView } from './clients.js';
 import { initInvoices, renderInvoiceList, calcTotals } from './invoices.js';
 import { initContracts, renderContractList, rightsInfo } from './contracts.js';
 import { initFinance, renderFinanceView } from './finance.js';
-import { initTrends, renderTrendsView } from './trends.js';
-import { CURATED_TRENDS } from './trends-data.js';
 import { initSocial, renderAnalyticsView, renderSocialSettingsSection, renderOverviewSocialPreview } from './social.js';
 import { renderTodos } from './todos.js';
 
@@ -26,7 +24,6 @@ function navigate(view) {
   if (view === 'clients') renderClientsView();
   if (view === 'settings') { renderSettings(); renderSocialSettingsSection(); }
   if (view === 'finance') renderFinanceView();
-  if (view === 'trends') renderTrendsView();
   if (view === 'analytics') renderAnalyticsView();
 }
 
@@ -68,22 +65,6 @@ function renderOverview() {
   const profitEl = document.getElementById('ovFinProfit');
   profitEl.textContent = eur(fin.profit);
   profitEl.classList.toggle('negative', fin.profit < 0);
-
-  const latestTrend = CURATED_TRENDS.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
-  const trendPreview = document.getElementById('overviewTrendPreview');
-  if (latestTrend) {
-    trendPreview.innerHTML = `
-      <div class="trend-card">
-        <div class="trend-card-head">
-          <span class="trend-tag">${latestTrend.tag}</span>
-          <span class="muted small">${fmtDate(latestTrend.date)}</span>
-        </div>
-        <h3>${latestTrend.title}</h3>
-        <p>${latestTrend.description}</p>
-      </div>`;
-  } else {
-    trendPreview.innerHTML = '<p class="muted small">Noch keine Trends erfasst.</p>';
-  }
 
   const trackedRights = contracts
     .map(c => ({ c, info: rightsInfo(c) }))
@@ -149,7 +130,6 @@ function boot() {
   initInvoices(navigate);
   initContracts(navigate);
   initFinance(navigate);
-  initTrends();
   initWeather();
   const initialView = initSocial(navigate);
   navigate(initialView || 'overview');

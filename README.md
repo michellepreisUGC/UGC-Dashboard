@@ -10,7 +10,6 @@ Reines HTML/CSS/JavaScript, kein Build-Tool, keine Abhängigkeiten.
 - **Rechnungen**: Editor mit freien Positionen, automatischer Summenberechnung, deutschen Pflichtangaben nach §14 UStG (Rechnungsnummer, Leistungsdatum, Steuernummer/USt-IdNr., Kleinunternehmerregelung §19 UStG), optionalem PDF-Anhang für bereits abgeschlossene Rechnungen sowie Druck/PDF-Export mit automatisch vorgeschlagenem Dateinamen.
 - **Verträge**: UGC-Vertrags-Grundvorlage mit editierbaren Abschnitten (Leistung, Vergütung, Nutzungsrechte, Vertraulichkeit, Kündigung, Schlussbestimmungen), ebenfalls druckbar mit automatischem Dateinamen. Nutzungsrechte können zeitlich befristet werden (z. B. Paid-Ads-Whitelisting) – die Karte "Fristen im Blick" zeigt ablaufende/abgelaufene Rechte zur Follow-up-Nachverfolgung, inkl. Vorschau auf der Startseite. Auch hier lässt sich ein PDF-Anhang für bereits laufende/abgeschlossene Verträge hinterlegen.
 - **Einnahmen & Ausgaben**: Einnahmen-Überschuss-Rechnung (EÜR) für die Steuererfassung. Bezahlte Rechnungen zählen automatisch als Einnahme, dazu manuelle Einnahmen/Ausgaben mit Kategorien, Jahresauswahl, Gewinn/Verlust und Ausgaben-Aufschlüsselung nach Kategorie. Eine Kurzübersicht erscheint auch auf der Startseite. Über "Jahresexport (PDF)" lässt sich die komplette Jahresübersicht (alle Einnahmen, alle Ausgaben nach Kategorie, Summen) als ein druckbares Dokument für die Steuererklärung erzeugen.
-- **TikTok-Trends**: Kuratierte Liste aktueller Trends (Sounds, Challenges, Formate, Hashtags, UGC-Tipps) mit Quellenangabe, Schnelllinks zum offiziellen TikTok Creative Center sowie ein eigenes Trend-Journal zum Festhalten selbst entdeckter Ideen. Die kuratierte Liste wird wöchentlich automatisch aktualisiert (siehe unten).
 - **Kund:innen**: Einfache Kontaktverwaltung zur Wiederverwendung in Rechnungen & Verträgen.
 - **Firmendaten**: Zentrale Grundvorlage (Firmenname, Sitz, Steuernummer, Bankverbindung, Logo, Standardtexte), die automatisch in alle Dokumente einfließt.
 - **Social Analytics**: Instagram- & TikTok-Follower und die letzten Beiträge (Likes, Kommentare, Reichweite/Aufrufe, Interaktionsrate) auf einen Blick, inkl. Follower-Trend und automatischem täglichem Sync (~8 Uhr) – siehe [Setup-Anleitung](#social-analytics-instagram--tiktok-einrichten) unten.
@@ -69,7 +68,7 @@ npx vercel /Users/Michelle/Claude
 
 Wichtig: Nach dem Hosten die **Firmendaten einmalig direkt im Live-Dashboard** eintragen (nicht hier lokal), da die Daten pro Browser/Domain getrennt gespeichert werden.
 
-**Repo:** [github.com/michellepreisUGC/UGC-Dashboard](https://github.com/michellepreisUGC/UGC-Dashboard) – wenn dieses Repo z. B. mit Netlify verbunden wird, deployt die gehostete Seite automatisch neu, sobald neuer Code (z. B. aktualisierte Trends, siehe unten) gepusht wird.
+**Repo:** [github.com/michellepreisUGC/UGC-Dashboard](https://github.com/michellepreisUGC/UGC-Dashboard) – wenn dieses Repo z. B. mit Netlify verbunden wird, deployt die gehostete Seite automatisch neu, sobald neuer Code gepusht wird.
 
 ## Social Analytics (Instagram & TikTok) einrichten
 
@@ -126,20 +125,6 @@ Im Dashboard unter **Firmendaten → „Social Media verbinden"** auf „Verbind
 - Instagram-Long-Lived-Token laufen nach 60 Tagen ab und werden automatisch beim täglichen Sync erneuert; TikTok-Access-Token laufen sogar nur 24h, werden aber ebenfalls automatisch per Refresh-Token erneuert. Solange mindestens alle paar Wochen ein Sync läuft, bleibt die Verbindung aktiv.
 - Falls Meta oder TikTok ihre API-Felder mal ändern: Die komplette API-Anbindung liegt gebündelt in `netlify/functions/lib/instagram.js` und `netlify/functions/lib/tiktok.js`.
 
-## TikTok-Trends: wöchentliche Auto-Recherche
-
-Es gibt keine offizielle kostenlose TikTok-API für Trends, daher wird die kuratierte Liste stattdessen durch einen automatisierten Claude-Routine-Lauf aktuell gehalten:
-
-- **Was passiert**: Jeden Montag ca. 8:05 Uhr recherchiert ein Cloud-Agent per Websuche aktuelle TikTok-Trends und überschreibt `js/trends-data.js` im GitHub-Repo mit einem Commit + Push.
-- **Verwaltung**: Einsehbar/änderbar unter [claude.ai/code/routines](https://claude.ai/code/routines) (Name: „TikTok-Trends wöchentlich aktualisieren").
-- **Lokale Kopie aktuell halten**: Damit dein lokales Verzeichnis die neuen Trends sieht, einmal pro Woche `git pull` ausführen:
-  ```bash
-  cd /Users/Michelle/Claude
-  git pull
-  ```
-  Falls das Repo mit einem Hosting-Anbieter (z. B. Netlify) verbunden ist, übernimmt der das automatisch – dann ist kein manueller `git pull` nötig, nur für die lokale Version.
-- **Eigene Notizen bleiben unberührt**: Das Trend-Journal (selbst eingetragene Ideen) liegt separat im Browser-`localStorage` und wird von der Automatisierung nicht angefasst.
-
 ## Projektstruktur
 
 ```
@@ -153,8 +138,6 @@ js/clients.js           Kunden-Verwaltung
 js/invoices.js          Rechnungs-Editor & -Liste
 js/contracts.js         Vertrags-Editor & -Liste
 js/finance.js           Einnahmen & Ausgaben (EÜR) inkl. Jahresexport
-js/trends.js            TikTok-Trends-Ansicht & Trend-Journal
-js/trends-data.js       Kuratierte Trends-Liste (wöchentlich automatisch aktualisiert)
 js/social.js            Social-Analytics-Ansicht & Connect-UI in den Firmendaten
 js/main.js              Navigation & Übersicht
 
@@ -174,4 +157,4 @@ netlify/functions/lib/                     Instagram-/TikTok-API-Anbindung, Sync
 - Mail-Integration (z. B. Gmail/Outlook) einzeln anbinden.
 - Bei Bedarf: echtes Backend für geräteübergreifenden Zugriff.
 - Weitere Vertragsklauseln oder Rechnungsfelder je nach Bedarf ergänzen – alle Texte in `js/contracts.js` (`DEFAULT_SECTIONS`) und `js/invoices.js` sind einfach anpassbar.
-- Repo mit Netlify/Vercel verbinden, damit Trend-Updates automatisch live gehen (siehe oben).
+- Repo mit Netlify/Vercel verbinden, damit Änderungen automatisch live gehen.

@@ -32,9 +32,6 @@
       <button class="nav-item" data-view="finance">
         <span class="nav-icon">◈</span> Einnahmen &amp; Ausgaben
       </button>
-      <button class="nav-item" data-view="trends">
-        <span class="nav-icon">♪</span> TikTok-Trends
-      </button>
       <button class="nav-item" data-view="analytics">
         <span class="nav-icon">⬈</span> Social Analytics
       </button>
@@ -138,14 +135,6 @@
           </div>
         </div>
 
-        <div class="card card-trends-preview">
-          <div class="card-head">
-            <h2>TikTok-Trend der Woche</h2>
-            <button class="btn-ghost small" data-view="trends">Alle Trends ↗</button>
-          </div>
-          <div id="overviewTrendPreview"></div>
-        </div>
-
         <div class="card card-rights-preview">
           <div class="card-head">
             <h2>Nutzungsrechte-Fristen</h2>
@@ -241,28 +230,6 @@
       <div class="editor-preview" style="max-width:800px; margin:0 auto;">
         <div class="doc-preview" id="financeExportPreview"></div>
       </div>
-    </section>
-
-    <!-- TRENDS -->
-    <section class="view" id="view-trends">
-      <header class="view-header">
-        <div>
-          <h1>TikTok-Trends</h1>
-          <p class="subtitle" id="trendsUpdatedLabel">Kuratierte Liste</p>
-        </div>
-        <button class="btn-primary" id="newTrendNoteBtn">+ Trend-Notiz</button>
-      </header>
-
-      <p class="hint-banner hidden" id="trendsStaleHint">Diese kuratierte Liste ist älter als 9 Tage – schau gerne im TikTok Creative Center vorbei oder trag neue Funde im Trend-Journal ein.</p>
-
-      <div class="trend-links" id="trendQuickLinks"></div>
-
-      <h2 class="section-title">Aktuell kuratiert</h2>
-      <div class="trend-cards-grid" id="curatedTrendsList"></div>
-
-      <h2 class="section-title">Euer Trend-Journal</h2>
-      <div class="trend-cards-grid" id="trendNotesList"></div>
-      <p class="empty-state hidden" id="trendNotesEmptyState">Noch keine eigenen Notizen – trag Trends ein, die dir auffallen.</p>
     </section>
 
     <!-- INVOICES LIST -->
