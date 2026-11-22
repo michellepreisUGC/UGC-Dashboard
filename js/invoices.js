@@ -383,6 +383,13 @@ function renderPreview() {
     ? `<div class="row">Umsatzsteuer<span>0,00 € (§19 UStG)</span></div>`
     : `<div class="row">zzgl. ${current.vatRate}% USt.<span>${eur(totals.vat)}</span></div>`;
 
+  const companyDetails = [
+    ['Steuernummer', settings.taxId],
+    ['USt-IdNr.', settings.vatId],
+    ['IBAN', settings.iban],
+    ['BIC', settings.bic]
+  ].filter(([, value]) => value);
+
   preview.innerHTML = `
     <div class="doc-header">
       ${settings.logo ? `<img class="doc-logo" src="${settings.logo}">` : `<div class="doc-title">${escapeHtml(settings.companyName) || 'Deine Firma'}</div>`}
@@ -393,6 +400,9 @@ function renderPreview() {
         ${escapeHtml([settings.zip, settings.city].filter(Boolean).join(' '))}<br>
         ${settings.email ? escapeHtml(settings.email) + '<br>' : ''}
         ${settings.website ? escapeHtml(settings.website) : ''}
+        ${companyDetails.length ? `<dl class="invoice-company-details">
+          ${companyDetails.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}
+        </dl>` : ''}
       </div>
     </div>
 
@@ -429,8 +439,6 @@ function renderPreview() {
 
     <div class="doc-footer">
       <span>${escapeHtml(settings.companyName)} · ${escapeHtml(settings.ownerName)}</span>
-      <span>${settings.taxId ? 'St.-Nr. ' + escapeHtml(settings.taxId) : ''} ${settings.vatId ? '· USt-IdNr. ' + escapeHtml(settings.vatId) : ''}</span>
-      <span>${settings.iban ? 'IBAN ' + escapeHtml(settings.iban) : ''} ${settings.bic ? '· BIC ' + escapeHtml(settings.bic) : ''}</span>
     </div>
   `;
 }
