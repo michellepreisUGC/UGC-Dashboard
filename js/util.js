@@ -12,8 +12,8 @@ export const fmtDate = (iso) => {
 };
 
 export const addDays = (iso, days) => {
-  const d = new Date(iso + 'T00:00:00');
-  d.setDate(d.getDate() + Number(days || 0));
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + Number(days || 0));
   return d.toISOString().slice(0, 10);
 };
 

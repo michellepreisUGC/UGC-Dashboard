@@ -239,6 +239,10 @@ input, textarea, select{ font-family: inherit; }
 }
 .checkbox-field input{ width:auto; }
 .field-hint{ font-size:.74rem; color: var(--ink-faint); }
+.invoice-payment-terms{ display:flex; flex-wrap:wrap; gap:6px; }
+.invoice-payment-terms button[aria-pressed="true"]{
+  background:var(--rose-tint); color:var(--rose-dark); border-color:var(--rose-dark);
+}
 
 .settings-card .form-section{ border:none; padding:0 0 22px; margin-bottom:22px; border-bottom:1px solid var(--border); }
 .settings-card .form-section:last-child{ border-bottom:none; }

@@ -1,6 +1,8 @@
 import { Store } from './store.js';
-import { uid, eur, fmtDate, todayISO, addDays, el, showToast, slugify, fileToDataUrl, checkAttachmentSize, printAsPdf } from './util.js';
+import { uid, eur, fmtDate, addDays, el, showToast, slugify, fileToDataUrl, checkAttachmentSize, printAsPdf } from './util.js';
 import { openClientModal } from './clients.js';
+
+const PAYMENT_TERMS = [7, 14, 30];
 
 let current = null; // invoice being edited
 let goHome = null;
@@ -54,7 +56,14 @@ function removeInvoice(inv) {
 function duplicateInvoice(inv) {
   const settings = Store.getSettings();
   const number = nextInvoiceNumber(settings);
-  const copy = { ...inv, id: uid(), number, date: todayISO(), status: 'draft', attachmentName: '', attachmentData: '', items: inv.items.map(i => ({ ...i, id: uid() })) };
+  const date = invoiceToday();
+  const paymentTermsDays = invoicePaymentTerms(inv) ?? (settings.paymentTermsDays || 14);
+  const copy = {
+    ...inv, id: uid(), number, date, paymentTermsDays,
+    dueDate: addDays(date, paymentTermsDays),
+    status: 'draft', attachmentName: '', attachmentData: '',
+    items: inv.items.map(i => ({ ...i, id: uid() }))
+  };
   Store.saveInvoice(copy);
   Store.saveSettings({ nextInvoiceNumber: settings.nextInvoiceNumber + 1 });
   renderInvoiceList();
@@ -70,18 +79,33 @@ function blankItem() {
   return { id: uid(), desc: '', qty: 1, price: 0 };
 }
 
+function invoiceToday() {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
+
+function invoicePaymentTerms(invoice) {
+  return invoice.paymentTermsDays ?? PAYMENT_TERMS.find(days =>
+    invoice.date && invoice.dueDate && addDays(invoice.date, days) === invoice.dueDate
+  );
+}
+
 function openEditor(invoice = null) {
   const settings = Store.getSettings();
   if (invoice) {
     current = JSON.parse(JSON.stringify(invoice));
+    current.paymentTermsDays = invoicePaymentTerms(current);
   } else {
+    const date = invoiceToday();
+    const paymentTermsDays = settings.paymentTermsDays || 14;
     current = {
       id: uid(),
       number: nextInvoiceNumber(settings),
       isNew: true,
-      date: todayISO(),
-      serviceDate: todayISO(),
-      dueDate: addDays(todayISO(), settings.paymentTermsDays || 14),
+      date,
+      serviceDate: date,
+      paymentTermsDays,
+      dueDate: addDays(date, paymentTermsDays),
       clientId: '',
       clientName: '',
       clientAddress: '',
@@ -109,6 +133,10 @@ function clientOptions() {
   const clients = Store.getClients();
   return `<option value="">— frei eingeben —</option>` +
     clients.map(c => `<option value="${c.id}" ${c.id === current.clientId ? 'selected' : ''}>${c.name}${c.company ? ' · ' + c.company : ''}</option>`).join('');
+}
+
+function dueDateLabel() {
+  return current.dueDate ? `Fällig am ${fmtDate(current.dueDate)}` : '';
 }
 
 function renderForm() {
@@ -153,7 +181,13 @@ function renderForm() {
       <div class="form-row">
         <div class="form-field"><label for="inv-date">Rechnungsdatum</label><input type="date" id="inv-date" value="${current.date}"></div>
         <div class="form-field"><label for="inv-serviceDate">Leistungsdatum</label><input type="date" id="inv-serviceDate" value="${current.serviceDate}"></div>
-        <div class="form-field"><label for="inv-dueDate">Fällig am</label><input type="date" id="inv-dueDate" value="${current.dueDate}"></div>
+        <div class="form-field">
+          <label id="inv-paymentTermsLabel">Zahlungsziel</label>
+          <div class="invoice-payment-terms" role="group" aria-labelledby="inv-paymentTermsLabel">
+            ${PAYMENT_TERMS.map(days => `<button type="button" class="btn-ghost small" data-payment-days="${days}" aria-pressed="${current.paymentTermsDays === days}">${days} Tage</button>`).join('')}
+          </div>
+          <span class="field-hint" id="inv-dueDate" aria-live="polite">${dueDateLabel()}</span>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-field">
@@ -229,11 +263,29 @@ function renderForm() {
   bind('inv-clientAddress', 'clientAddress');
   bind('inv-number', 'number');
   bind('inv-status', 'status');
-  bind('inv-date', 'date');
   bind('inv-serviceDate', 'serviceDate');
-  bind('inv-dueDate', 'dueDate');
   bind('inv-vatRate', 'vatRate', Number);
   bind('inv-notes', 'notes');
+
+  const paymentButtons = document.querySelectorAll('.invoice-payment-terms button');
+  const refreshPaymentTerms = () => {
+    if (current.paymentTermsDays != null) {
+      current.dueDate = current.date ? addDays(current.date, current.paymentTermsDays) : '';
+    }
+    document.getElementById('inv-dueDate').textContent = dueDateLabel();
+    paymentButtons.forEach(button => {
+      button.setAttribute('aria-pressed', Number(button.dataset.paymentDays) === current.paymentTermsDays);
+    });
+    renderPreview();
+  };
+  document.getElementById('inv-date').addEventListener('input', e => {
+    current.date = e.target.value;
+    refreshPaymentTerms();
+  });
+  paymentButtons.forEach(button => button.addEventListener('click', () => {
+    current.paymentTermsDays = Number(button.dataset.paymentDays);
+    refreshPaymentTerms();
+  }));
 
   document.getElementById('addItemBtn').addEventListener('click', () => {
     current.items.push(blankItem());
